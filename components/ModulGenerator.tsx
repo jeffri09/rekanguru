@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Fase, AdminRequest, AdminDocType, TeacherIdentity, AppCategory } from '../types';
 import {
   Users, Zap, UserCircle, LayoutDashboard, CheckSquare,
@@ -6,6 +6,7 @@ import {
   Book, Briefcase, Sparkles, Star, Target, Palette, Box,
   ChevronDown, ChevronUp, AlertCircle, Quote, HeartHandshake
 } from 'lucide-react';
+import { getMataPelajaranByFase, getElemenCPByMapel } from '../data/kurikulumData';
 
 interface ModulGeneratorProps {
   category: AppCategory;
@@ -123,6 +124,8 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
 
   const [showIdentity, setShowIdentity] = useState(true);
   const [isManualModel, setIsManualModel] = useState(false);
+  const [isManualMapel, setIsManualMapel] = useState(false);
+  const [isManualElemen, setIsManualElemen] = useState(false);
 
   const basicDocs = [
     AdminDocType.ModulAjar, AdminDocType.ATP, AdminDocType.AnalisisCP,
@@ -158,10 +161,16 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
     "Cooperative Learning"
   ];
 
-  const elemenOptions = [
-    "Bilangan", "Aljabar", "Pengukuran", "Geometri", "Analisis Data dan Peluang",
-    "Pemahaman IPAS", "Keterampilan Proses", "Menyimak", "Membaca & Memirsa", "Berbicara & Mempresentasikan", "Menulis"
-  ];
+  // Dynamic options based on Kurikulum Merdeka
+  const mataPelajaranOptions = useMemo(() =>
+    getMataPelajaranByFase(formData.fase as Fase),
+    [formData.fase]
+  );
+
+  const elemenOptions = useMemo(() =>
+    getElemenCPByMapel(formData.mataPelajaran),
+    [formData.mataPelajaran]
+  );
 
   // Re-sync single doc selection when category changes
   useEffect(() => {
@@ -170,6 +179,19 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
     else if (category === AppCategory.Bimbingan) setSelectedSingleDoc(AdminDocType.JurnalSikap);
     else setSelectedSingleDoc(null);
   }, [category]);
+
+  // Reset mata pelajaran when fase changes
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, mataPelajaran: '', elemen: '' }));
+    setIsManualMapel(false);
+    setIsManualElemen(false);
+  }, [formData.fase]);
+
+  // Reset elemen when mata pelajaran changes
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, elemen: '' }));
+    setIsManualElemen(false);
+  }, [formData.mataPelajaran]);
 
   const handleIdentityChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setIdentity({ ...identity, [e.target.name]: e.target.value });
@@ -187,6 +209,29 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
     } else {
       setIsManualModel(false);
       setFormData({ ...formData, modelPembelajaran: val });
+    }
+  };
+
+  const handleMapelSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === "MANUAL_INPUT") {
+      setIsManualMapel(true);
+      setFormData({ ...formData, mataPelajaran: "", elemen: "" });
+    } else {
+      setIsManualMapel(false);
+      setFormData({ ...formData, mataPelajaran: val, elemen: "" });
+    }
+    setIsManualElemen(false);
+  };
+
+  const handleElemenSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === "MANUAL_INPUT") {
+      setIsManualElemen(true);
+      setFormData({ ...formData, elemen: "" });
+    } else {
+      setIsManualElemen(false);
+      setFormData({ ...formData, elemen: val });
     }
   };
 
@@ -248,13 +293,53 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
                   </select>
                 </InputWrapper>
 
-                <InputWrapper label="Mata Pelajaran" icon={Book} accentClass={styles.accent}>
-                  <input type="text" name="mataPelajaran" required value={formData.mataPelajaran} onChange={handleFormChange} className={`w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 ${styles.ring} outline-none transition-all`} placeholder="Mis: Matematika" />
+                <InputWrapper label="Mata Pelajaran" icon={Book} accentClass={styles.accent} tip="Pilih sesuai fase atau input manual">
+                  <select
+                    name="mataPelajaranSelector"
+                    value={isManualMapel ? "MANUAL_INPUT" : (formData.mataPelajaran || "")}
+                    onChange={handleMapelSelectChange}
+                    className={`w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 ${styles.ring} outline-none transition-all`}
+                  >
+                    <option value="">-- Pilih Mata Pelajaran --</option>
+                    {mataPelajaranOptions.map(mp => <option key={mp} value={mp}>{mp}</option>)}
+                    <option value="MANUAL_INPUT">+ Input Manual</option>
+                  </select>
+                  {isManualMapel && (
+                    <input
+                      type="text"
+                      name="mataPelajaran"
+                      value={formData.mataPelajaran}
+                      onChange={handleFormChange}
+                      className={`mt-2 w-full px-4 py-2 border rounded-xl text-sm ${styles.border} ${styles.bg} focus:ring-2 ${styles.ring}`}
+                      placeholder="Ketik nama mata pelajaran..."
+                      autoFocus
+                    />
+                  )}
                 </InputWrapper>
 
-                <InputWrapper label="Elemen CP" icon={Target} tip="Pilih atau ketik elemen CP" accentClass={styles.accent}>
-                  <input list="elemen-list" type="text" name="elemen" value={formData.elemen} onChange={handleFormChange} className={`w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 ${styles.ring} outline-none transition-all`} placeholder="Mis: Bilangan" />
-                  <datalist id="elemen-list">{elemenOptions.map(e => <option key={e} value={e} />)}</datalist>
+                <InputWrapper label="Elemen CP" icon={Target} tip="Pilih sesuai mata pelajaran atau input manual" accentClass={styles.accent}>
+                  <select
+                    name="elemenSelector"
+                    value={isManualElemen ? "MANUAL_INPUT" : (formData.elemen || "")}
+                    onChange={handleElemenSelectChange}
+                    disabled={!formData.mataPelajaran && !isManualMapel}
+                    className={`w-full px-4 py-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 ${styles.ring} outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <option value="">-- Pilih Elemen CP --</option>
+                    {elemenOptions.map(e => <option key={e} value={e}>{e}</option>)}
+                    <option value="MANUAL_INPUT">+ Input Manual</option>
+                  </select>
+                  {isManualElemen && (
+                    <input
+                      type="text"
+                      name="elemen"
+                      value={formData.elemen}
+                      onChange={handleFormChange}
+                      className={`mt-2 w-full px-4 py-2 border rounded-xl text-sm ${styles.border} ${styles.bg} focus:ring-2 ${styles.ring}`}
+                      placeholder="Ketik elemen CP..."
+                      autoFocus
+                    />
+                  )}
                 </InputWrapper>
               </div>
 

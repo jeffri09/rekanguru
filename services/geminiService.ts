@@ -5,11 +5,7 @@ import { AdminRequest, AdminDocType, QuizRequest } from "../types";
 // Inisialisasi AI dengan Multi-API Key
 // Kumpulan API Key untuk rotasi beban
 const API_KEYS = [
-  "AIzaSyCB0-ZwHlJbXUxbIINj2NdU2TKMFuTe1TY",
-  "AIzaSyDy1xXU-3YxSHudLte6QccXmYGdey03fQ8",
-  "AIzaSyBtC1T4QzoGnDRXbcP_cOBqc1UDzQTBWsI",
-  "AIzaSyBAkQc7P7yANLwFuh8Ho4T3sL9iWtI7I3Q",
-  "AIzaSyDI_UikB9DeT9LYRezGBy64_tnea0r4Wco"
+  "AIzaSyC4YQxZb0EjHuoARXgvbSBNfCEU82_v7a8"
 ];
 
 // Fallback ke .env jika tersedia
