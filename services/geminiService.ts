@@ -154,7 +154,6 @@ INSTRUKSI:
 2. Buat soal dengan tingkat kognitif C4-C6 (Menganalisis, Mengevaluasi, Mencipta)
 3. Setiap soal harus relevan dengan materi PDF
 4. Sertakan KUNCI JAWABAN dengan PEMBAHASAN lengkap di bagian akhir
-5. Untuk rumus matematika, gunakan format LaTeX: $rumus$ untuk inline atau $$rumus$$ untuk block
 
 FORMAT OUTPUT:
 ## SOAL
@@ -163,7 +162,19 @@ FORMAT OUTPUT:
 ## KUNCI JAWABAN & PEMBAHASAN
 [Jawaban benar dan penjelasan detail]
 
-Gunakan Bahasa Indonesia formal dan akademis.`;
+ATURAN FORMAT WAJIB:
+- Gunakan Bahasa Indonesia formal dan akademis
+- JANGAN gunakan tag HTML apapun (seperti <br>, <p>, <div>, dll). Gunakan HANYA format Markdown murni
+- Untuk baris baru, gunakan dua enter (paragraf baru) atau tanda strip (-) untuk list
+- Untuk rumus matematika/sains, gunakan format LaTeX:
+  * Inline: $E = mc^2$ atau $\\frac{a}{b}$
+  * Block: $$\\sum_{i=1}^{n} x_i$$
+- Contoh penulisan rumus yang benar:
+  * Pythagoras: $a^2 + b^2 = c^2$
+  * Pecahan: $\\frac{1}{2}$
+  * Akar: $\\sqrt{x}$
+  * Pangkat: $x^2$ atau $x^{10}$
+  * Indeks: $x_1$ atau $x_{12}$`;
 
   return withRetry(async () => {
     // Get fresh AI instance (might be rotated)
@@ -317,12 +328,24 @@ Integrasikan pendekatan Deep Learning dan Profil Pelajar Pancasila.
 
     return baseContext + specificInstruction + `
 
-PENTING:
+ATURAN FORMAT WAJIB:
 - Gunakan Bahasa Indonesia formal dan profesional
 - JANGAN mengarang konten - gunakan standar Kurikulum Merdeka resmi
-- Format output dalam Markdown yang rapi
-- Sertakan tabel dengan format yang benar
-- Untuk rumus matematika/sains, gunakan format LaTeX: $rumus$ untuk inline atau $$rumus$$ untuk block
+- Format output dalam Markdown yang rapi, JANGAN gunakan tag HTML apapun (seperti <br>, <p>, <div>, dll)
+- Untuk baris baru gunakan dua enter (paragraf baru) atau tanda strip (-) untuk list
+- Sertakan tabel dengan format Markdown yang benar:
+  | Kolom 1 | Kolom 2 |
+  |---------|--------|
+  | Data 1  | Data 2 |
+- Untuk rumus matematika/sains, gunakan format LaTeX:
+  * Inline: $E = mc^2$ atau $\\frac{a}{b}$
+  * Block: $$\\sum_{i=1}^{n} x_i$$
+- Contoh penulisan rumus yang benar:
+  * Pythagoras: $a^2 + b^2 = c^2$
+  * Pecahan: $\\frac{1}{2}$
+  * Akar: $\\sqrt{x}$
+  * Pangkat: $x^2$ atau $x^{10}$
+  * Indeks: $x_1$ atau $x_{12}$
 `;
   };
 
