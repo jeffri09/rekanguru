@@ -1,18 +1,14 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { AdminRequest, AdminDocType, QuizRequest } from "../types";
 
-// Inisialisasi AI dengan Multi-API Key
-// Kumpulan API Key untuk rotasi beban
-const API_KEYS = [
-  "AIzaSyC4YQxZb0EjHuoARXgvbSBNfCEU82_v7a8"
-];
+// Inisialisasi AI dengan API Key
+// API Key harus diset melalui Settings Modal atau environment variable
+const API_KEYS: string[] = [];
 
-// Fallback ke .env jika tersedia
 // Fallback ke .env jika tersedia dan bukan placeholder
-if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'PLACEHOLDER_API_KEY') {
+if (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'PLACEHOLDER_API_KEY') {
   console.log("[Init] Using API Key from environment variable");
-  API_KEYS.unshift(process.env.GEMINI_API_KEY);
+  API_KEYS.push(process.env.GEMINI_API_KEY);
 }
 
 // State rotasi
@@ -28,6 +24,11 @@ const getActiveGenAI = (): GoogleGenAI => {
       console.log(`[API Custom] Using User-Provided API Key`);
       return new GoogleGenAI({ apiKey: customKey });
     }
+  }
+
+  // Jika tidak ada custom key dan tidak ada API_KEYS, throw error
+  if (API_KEYS.length === 0) {
+    throw new Error('🔑 API Key belum dikonfigurasi. Silakan masukkan API Key Anda di menu Pengaturan API.');
   }
 
   const now = Date.now();
@@ -66,7 +67,7 @@ const getErrorMessage = (error: GeminiError): string => {
 
   // Rate Limit Errors
   if (status === 429 || code === 'RATE_LIMIT_EXCEEDED' || message.includes('quota')) {
-    return '⏳ Batas penggunaan AI tercapai. Mohon tunggu 1-2 menit dan coba lagi. Tip: Gunakan API key berbayar untuk akses tanpa batas.';
+    return '⏳ Batas penggunaan AI tercapai (Rate Limit/Quota). Solusi: Buat API Key BARU di aistudio.google.com/app/apikey lalu masukkan di Pengaturan API.';
   }
 
   // API Key Errors
