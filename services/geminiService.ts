@@ -169,7 +169,7 @@ Gunakan Bahasa Indonesia formal dan akademis.`;
     // Get fresh AI instance (might be rotated)
     const aiInstance = getAi();
     const response = await aiInstance.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3-flash-preview",
       contents: [
         {
           role: "user",
@@ -332,7 +332,7 @@ PENTING:
     // Get fresh AI instance (might be rotated)
     const aiInstance = getAi();
     const result = await aiInstance.models.generateContentStream({
-      model: "gemini-2.0-flash",
+      model: "gemini-3-flash-preview",
       contents: [{ role: "user", parts: [{ text: prompt }] }]
     });
 
@@ -356,7 +356,7 @@ export const testConnection = async (apiKey?: string): Promise<boolean> => {
       : getAi(); // Use default rotation or existing custom key logic
 
     await aiToTest.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3-flash-preview",
       contents: [{ role: "user", parts: [{ text: "Test" }] }]
     });
     return true;
