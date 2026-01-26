@@ -170,7 +170,7 @@ Gunakan Bahasa Indonesia formal dan akademis.`;
     // Get fresh AI instance (might be rotated)
     const aiInstance = getAi();
     const response = await aiInstance.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       contents: [
         {
           role: "user",
@@ -348,4 +348,21 @@ PENTING:
     if (onProgress) onProgress(100);
     return fullText;
   });
+};
+
+export const testConnection = async (apiKey?: string): Promise<boolean> => {
+  try {
+    const aiToTest = apiKey
+      ? new GoogleGenAI({ apiKey })
+      : getAi(); // Use default rotation or existing custom key logic
+
+    await aiToTest.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: [{ role: "user", parts: [{ text: "Test" }] }]
+    });
+    return true;
+  } catch (e) {
+    console.error("Connection Test Failed:", e);
+    return false;
+  }
 };

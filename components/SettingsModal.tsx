@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Key, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { X, Save, Key, Trash2, AlertTriangle, CheckCircle2, Loader2, Signal } from 'lucide-react';
+import { testConnection } from '../services/geminiService';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -10,6 +11,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     const [apiKey, setApiKey] = useState('');
     const [savedKey, setSavedKey] = useState<string | null>(null);
     const [isSaved, setIsSaved] = useState(false);
+    const [isTesting, setIsTesting] = useState(false);
+    const [testStatus, setTestStatus] = useState<'idle' | 'success' | 'failed'>('idle');
 
     useEffect(() => {
         if (isOpen) {
@@ -22,6 +25,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 setApiKey('');
             }
             setIsSaved(false);
+            setTestStatus('idle');
         }
     }, [isOpen]);
 
@@ -38,6 +42,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             localStorage.removeItem('custom_gemini_api_key');
             setSavedKey(null);
             setApiKey('');
+            setTestStatus('idle');
         }
     };
 
@@ -76,7 +81,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                             <input
                                 type="password"
                                 value={apiKey}
-                                onChange={(e) => setApiKey(e.target.value)}
+                                onChange={(e) => {
+                                    setApiKey(e.target.value);
+                                    setTestStatus('idle');
+                                }}
                                 placeholder="AIzaSy..."
                                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-mono text-sm"
                             />
@@ -87,33 +95,53 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                             {savedKey && <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle2 size={12} /> Tersimpan</span>}
                         </p>
                     </div>
+
+                    {testStatus === 'failed' && (
+                        <div className="bg-red-50 text-red-600 p-3 rounded-lg text-xs flex items-center gap-2 animate-fade-in">
+                            <AlertTriangle size={16} /> API Key tidak valid atau kuota habis. Pastikan key benar.
+                        </div>
+                    )}
+                    {testStatus === 'success' && (
+                        <div className="bg-green-50 text-green-600 p-3 rounded-lg text-xs flex items-center gap-2 animate-fade-in">
+                            <CheckCircle2 size={16} /> Koneksi berhasil! Key valid dan siap digunakan.
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}
                 <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                    {savedKey ? (
-                        <button
-                            onClick={handleDelete}
-                            className="px-4 py-2 text-red-600 text-sm font-medium hover:bg-red-50 rounded-lg flex items-center gap-2 transition-colors"
-                        >
-                            <Trash2 size={16} /> Hapus Key
-                        </button>
-                    ) : (
-                        <div></div> // Spacer
-                    )}
+                    <div>
+                        {savedKey && (
+                            <button
+                                onClick={handleDelete}
+                                className="text-red-500 hover:text-red-700 p-2 rounded-lg transition-colors"
+                                title="Hapus Key"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        )}
+                    </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-2">
                         <button
-                            onClick={onClose}
-                            className="px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-100 rounded-lg transition-colors"
+                            onClick={async () => {
+                                setIsTesting(true);
+                                setTestStatus('idle');
+                                const valid = await testConnection(apiKey);
+                                setTestStatus(valid ? 'success' : 'failed');
+                                setIsTesting(false);
+                            }}
+                            disabled={!apiKey.trim() || isTesting}
+                            className="px-3 py-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
                         >
-                            Batal
+                            {isTesting ? <Loader2 size={16} className="animate-spin" /> : <Signal size={16} />}
+                            {isTesting ? 'Testing...' : 'Test Koneksi'}
                         </button>
                         <button
                             onClick={handleSave}
-                            disabled={!apiKey.trim() || apiKey === savedKey}
+                            disabled={!apiKey.trim() || apiKey === savedKey || isTesting || testStatus === 'failed'}
                             className={`px-6 py-2 rounded-lg text-sm font-bold text-white flex items-center gap-2 shadow-sm transition-all
-                ${!apiKey.trim() || apiKey === savedKey
+                ${!apiKey.trim() || apiKey === savedKey || isTesting || testStatus === 'failed'
                                     ? 'bg-slate-300 cursor-not-allowed'
                                     : isSaved
                                         ? 'bg-green-600 hover:bg-green-700'
