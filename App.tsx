@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { Sparkles, FileText, Menu, X, ChevronLeft, Loader2, BrainCircuit, Trash2 } from 'lucide-react';
+import { Sparkles, FileText, Menu, X, ChevronLeft, Loader2, BrainCircuit, Trash2, Settings } from 'lucide-react';
 import ModulGenerator from './components/ModulGenerator';
 import QuizGenerator from './components/QuizGenerator';
 import ResultDisplay from './components/ResultDisplay';
+import SettingsModal from './components/SettingsModal';
 import { generateAdminDocs, generateQuizFromPDF } from './services/geminiService';
 import { AppCategory, GeneratedDocument, AdminRequest, AdminDocType, QuizRequest } from './types';
 
@@ -15,7 +16,7 @@ const App: React.FC = () => {
             loader.classList.add('hidden-loader');
             // Hapus elemen dari DOM setelah transisi CSS selesai (300ms)
             const timer = setTimeout(() => {
-                if(loader && loader.parentNode) loader.parentNode.removeChild(loader);
+                if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
             }, 350);
             return () => clearTimeout(timer);
         }
@@ -27,16 +28,17 @@ const App: React.FC = () => {
             const saved = localStorage.getItem('rekanGuruDocs');
             const parsed = saved ? JSON.parse(saved) : [];
             return Array.isArray(parsed) ? parsed : [];
-        } catch (e) { 
+        } catch (e) {
             console.error("Corrupted storage:", e);
-            return []; 
+            return [];
         }
     });
-    
+
     const [currentView, setCurrentView] = useState<'form' | 'results'>('form');
     const [activeCategory, setActiveCategory] = useState<AppCategory>(AppCategory.Administrasi);
     const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
 
@@ -55,7 +57,7 @@ const App: React.FC = () => {
         try {
             const docType = selectedTypes[0] || AdminDocType.ModulAjar;
             const content = await generateAdminDocs(data, (p) => setProgress(p));
-            
+
             const newDoc: GeneratedDocument = {
                 id: Date.now().toString(),
                 title: `${docType} - ${data.mataPelajaran || 'Umum'}`,
@@ -107,7 +109,7 @@ const App: React.FC = () => {
         <div className="flex h-screen bg-slate-50 overflow-hidden">
             {/* Sidebar Overlay for Mobile */}
             {isSidebarOpen && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/50 z-40 md:hidden"
                     onClick={() => setIsSidebarOpen(false)}
                 />
@@ -120,13 +122,13 @@ const App: React.FC = () => {
                         <h1 className="font-bold text-xl text-slate-800">RekanGuru</h1>
                     </div>
                     <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-slate-500">
-                        <X size={20}/>
+                        <X size={20} />
                     </button>
                 </div>
                 <nav className="p-4 space-y-2 overflow-y-auto h-[calc(100%-80px)] custom-scrollbar">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">Menu Utama</p>
                     {Object.values(AppCategory).map(cat => (
-                        <button 
+                        <button
                             key={cat}
                             onClick={() => { setActiveCategory(cat); setCurrentView('form'); setIsSidebarOpen(false); }}
                             className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all font-medium flex items-center gap-2 ${activeCategory === cat && currentView === 'form' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'hover:bg-slate-100 text-slate-600'}`}
@@ -134,13 +136,13 @@ const App: React.FC = () => {
                             {cat}
                         </button>
                     ))}
-                    
+
                     <div className="pt-8">
                         <div className="flex items-center justify-between px-2 mb-3">
-                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Riwayat Dokumen</p>
-                             {documents.length > 0 && (
-                                <button onClick={() => { if(confirm('Hapus semua riwayat?')) setDocuments([]) }} className="text-slate-400 hover:text-red-500 transition-colors p-1" title="Hapus Semua"><Trash2 size={12}/></button>
-                             )}
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Riwayat Dokumen</p>
+                            {documents.length > 0 && (
+                                <button onClick={() => { if (confirm('Hapus semua riwayat?')) setDocuments([]) }} className="text-slate-400 hover:text-red-500 transition-colors p-1" title="Hapus Semua"><Trash2 size={12} /></button>
+                            )}
                         </div>
                         <div className="space-y-1">
                             {documents.length === 0 && (
@@ -150,7 +152,7 @@ const App: React.FC = () => {
                                 </div>
                             )}
                             {documents.map(doc => (
-                                <button 
+                                <button
                                     key={doc.id}
                                     onClick={() => { setActiveDocumentId(doc.id); setCurrentView('results'); setIsSidebarOpen(false); }}
                                     className={`w-full text-left px-4 py-2.5 text-xs rounded-lg truncate block border transition-all ${activeDocumentId === doc.id ? 'bg-indigo-50 border-indigo-100 text-indigo-700 font-medium' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}
@@ -160,8 +162,23 @@ const App: React.FC = () => {
                             ))}
                         </div>
                     </div>
+
+                    <div className="px-4 py-4 mt-auto border-t border-slate-100">
+                        <button
+                            onClick={() => { setIsSettingsOpen(true); setIsSidebarOpen(false); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all group"
+                        >
+                            <Settings size={18} className="text-slate-400 group-hover:text-indigo-600" />
+                            <span className="font-medium text-sm">Pengaturan API</span>
+                        </button>
+                    </div>
                 </nav>
             </aside>
+
+            <SettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+            />
 
             {/* Main Content - Added md:ml-64 to prevent sidebar overlap on desktop */}
             <main className="flex-1 flex flex-col min-w-0 bg-slate-50 relative md:ml-64 transition-all duration-300 h-screen">

@@ -23,6 +23,15 @@ let lastRotationTime = Date.now();
 const ROTATION_INTERVAL = 6000; // 6 detik
 
 const getActiveGenAI = (): GoogleGenAI => {
+  // Cek Custom API Key dari LocalStorage (jika ada)
+  if (typeof window !== 'undefined') {
+    const customKey = localStorage.getItem('custom_gemini_api_key');
+    if (customKey && customKey.trim().length > 10) {
+      console.log(`[API Custom] Using User-Provided API Key`);
+      return new GoogleGenAI({ apiKey: customKey });
+    }
+  }
+
   const now = Date.now();
   // Cek apakah sudah waktunya rotasi (setiap 6 detik)
   if (now - lastRotationTime > ROTATION_INTERVAL) {
