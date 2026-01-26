@@ -13,7 +13,9 @@ const API_KEYS = [
 ];
 
 // Fallback ke .env jika tersedia
-if (process.env.GEMINI_API_KEY) {
+// Fallback ke .env jika tersedia dan bukan placeholder
+if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'PLACEHOLDER_API_KEY') {
+  console.log("[Init] Using API Key from environment variable");
   API_KEYS.unshift(process.env.GEMINI_API_KEY);
 }
 
