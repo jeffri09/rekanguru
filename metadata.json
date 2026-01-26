@@ -1,0 +1,5 @@
+{
+  "name": "RekanGuru - Asisten Kurikulum Merdeka",
+  "description": "Aplikasi cerdas untuk membantu guru menyusun Modul Ajar Kurikulum Merdeka dan membuat kuis otomatis dari buku pelajaran menggunakan Gemini AI.",
+  "requestFramePermissions": []
+}
