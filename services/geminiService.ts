@@ -346,6 +346,12 @@ ATURAN FORMAT WAJIB:
   * Akar: $\\sqrt{x}$
   * Pangkat: $x^2$ atau $x^{10}$
   * Indeks: $x_1$ atau $x_{12}$
+
+PENTING - JANGAN BUAT BAGIAN TANDA TANGAN:
+- JANGAN membuat bagian "Mengetahui", "Kepala Sekolah", "Guru Mata Pelajaran", atau tanda tangan apapun
+- JANGAN membuat footer dokumen dengan tempat tanda tangan
+- Bagian tanda tangan akan ditambahkan SECARA OTOMATIS oleh sistem aplikasi
+- Fokus HANYA pada konten inti dokumen pembelajaran
 `;
   };
 

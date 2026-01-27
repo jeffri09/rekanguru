@@ -53,6 +53,7 @@ export interface TeacherIdentity {
   nama: string;
   nip: string;
   sekolah: string;
+  kota: string; // Kota untuk tanda tangan dokumen
   kepalaSekolah: string;
   nipKepala: string;
   semester: "1 (Ganjil)" | "2 (Genap)";

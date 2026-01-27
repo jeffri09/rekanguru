@@ -6,7 +6,7 @@ import {
   Book, Briefcase, Sparkles, Star, Target, Palette, Box,
   ChevronDown, ChevronUp, AlertCircle, Quote, HeartHandshake, Key
 } from 'lucide-react';
-import { getMataPelajaranByFase, getElemenCPByMapel } from '../data/kurikulumData';
+import { getMataPelajaranByFase, getElemenCPByFaseAndMapel } from '../data/kurikulumData';
 import { useApiKey } from '../hooks/useApiKey';
 import ApiKeyBanner from './ApiKeyBanner';
 
@@ -104,6 +104,7 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
     nama: '',
     nip: '',
     sekolah: '',
+    kota: '',
     kepalaSekolah: '',
     nipKepala: '',
     semester: '2 (Genap)',
@@ -177,8 +178,8 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
   );
 
   const elemenOptions = useMemo(() =>
-    getElemenCPByMapel(formData.mataPelajaran),
-    [formData.mataPelajaran]
+    getElemenCPByFaseAndMapel(formData.fase as Fase, formData.mataPelajaran),
+    [formData.fase, formData.mataPelajaran]
   );
 
   // Re-sync single doc selection when category changes
@@ -604,6 +605,10 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
 
               <InputWrapper label="Nama Sekolah" accentClass={styles.accent}>
                 <input type="text" name="sekolah" value={identity.sekolah} onChange={handleIdentityChange} className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-400 outline-none" placeholder="SMP NEGERI ..." />
+              </InputWrapper>
+
+              <InputWrapper label="Kota/Kabupaten" accentClass={styles.accent}>
+                <input type="text" name="kota" value={identity.kota} onChange={handleIdentityChange} className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-slate-400 outline-none" placeholder="Bandung, Jakarta, Surabaya..." />
               </InputWrapper>
 
               <InputWrapper label="Tahun Ajaran" accentClass={styles.accent}>
