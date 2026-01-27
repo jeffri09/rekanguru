@@ -1,21 +1,31 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { QuizRequest, TeacherIdentity } from '../types';
 import { FileText, Upload, BrainCircuit, UserCircle, ChevronUp, ChevronDown, Sparkles, X, CheckCircle2, Layers, BookOpen, Calculator, PenTool } from 'lucide-react';
+import { useApiKey } from '../hooks/useApiKey';
+import ApiKeyBanner from './ApiKeyBanner';
 
 interface QuizGeneratorProps {
   onSubmit: (data: QuizRequest) => void;
   isLoading: boolean;
+  onOpenSettings?: () => void;
 }
 
-const QuizGenerator: React.FC<QuizGeneratorProps> = ({ onSubmit, isLoading }) => {
+const QuizGenerator: React.FC<QuizGeneratorProps> = ({ onSubmit, isLoading, onOpenSettings }) => {
   const [file, setFile] = useState<File | null>(null);
   const [jumlahSoal, setJumlahSoal] = useState<number>(10);
   const [jenisSoal, setJenisSoal] = useState<'Pilihan Ganda' | 'Esai' | 'Campuran'>('Pilihan Ganda');
   const [topik, setTopik] = useState('');
   const [mataPelajaran, setMataPelajaran] = useState('');
   const [isDragging, setIsDragging] = useState(false);
-  
+
+  const { hasApiKey, refreshApiKey } = useApiKey();
+
+  // Refresh API key status when component mounts
+  useEffect(() => {
+    refreshApiKey();
+  }, [refreshApiKey]);
+
   const [identity, setIdentity] = useState<TeacherIdentity>({
     nama: '',
     nip: '',
@@ -123,49 +133,54 @@ const QuizGenerator: React.FC<QuizGeneratorProps> = ({ onSubmit, isLoading }) =>
 
   return (
     <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-white relative overflow-hidden animate-fade-in-up">
-        {/* Header Section */}
-        <div className={`relative px-6 py-10 sm:px-10 overflow-hidden`}>
-            <div className={`absolute inset-0 bg-gradient-to-br ${styles.gradient} opacity-90`}></div>
-            <div className="absolute top-0 right-0 -mr-10 -mt-10 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/10 rounded-full blur-2xl"></div>
-            
-            <div className="relative z-10 text-white">
-                <div className="flex items-center gap-3 mb-4 opacity-90">
-                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                      <BrainCircuit className="w-5 h-5 text-white"/>
-                    </div>
-                    <span className="text-sm font-bold tracking-widest uppercase opacity-80">Bank Soal AI</span>
-                </div>
-                <h2 className="text-3xl sm:text-4xl font-extrabold mb-3 leading-tight">
-                    Ubah Buku Paket Jadi Soal Ujian.
-                </h2>
-                <p className="text-white/80 text-lg max-w-2xl font-light">
-                    Unggah materi pelajaran (PDF), dan AI akan menyusun soal HOTS, LOTS, beserta kunci jawaban lengkap secara otomatis.
-                </p>
+      {/* Header Section */}
+      <div className={`relative px-6 py-10 sm:px-10 overflow-hidden`}>
+        <div className={`absolute inset-0 bg-gradient-to-br ${styles.gradient} opacity-90`}></div>
+        <div className="absolute top-0 right-0 -mr-10 -mt-10 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/10 rounded-full blur-2xl"></div>
+
+        <div className="relative z-10 text-white">
+          <div className="flex items-center gap-3 mb-4 opacity-90">
+            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+              <BrainCircuit className="w-5 h-5 text-white" />
             </div>
+            <span className="text-sm font-bold tracking-widest uppercase opacity-80">Bank Soal AI</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-extrabold mb-3 leading-tight">
+            Ubah Buku Paket Jadi Soal Ujian.
+          </h2>
+          <p className="text-white/80 text-lg max-w-2xl font-light">
+            Unggah materi pelajaran (PDF), dan AI akan menyusun soal HOTS, LOTS, beserta kunci jawaban lengkap secara otomatis.
+          </p>
         </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="px-6 py-8 sm:px-10 space-y-8">
-        
+
+        {/* API Key Warning Banner */}
+        {!hasApiKey && onOpenSettings && (
+          <ApiKeyBanner onOpenSettings={onOpenSettings} />
+        )}
+
         {/* Identity Card (Collapsible) */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
-          <button 
+          <button
             type="button"
             onClick={() => setShowIdentity(!showIdentity)}
             className="w-full px-6 py-4 flex items-center justify-between bg-slate-50/50 hover:bg-slate-50 transition-colors"
           >
-             <div className="flex items-center gap-3">
-               <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center">
-                 <UserCircle className="w-5 h-5" />
-               </div>
-               <div className="text-left">
-                 <h3 className="text-sm font-bold text-slate-800">Profil Guru & Kop Soal</h3>
-                 <p className="text-[10px] text-slate-500">Data ini akan muncul di header lembar soal</p>
-               </div>
-             </div>
-             {showIdentity ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center">
+                <UserCircle className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <h3 className="text-sm font-bold text-slate-800">Profil Guru & Kop Soal</h3>
+                <p className="text-[10px] text-slate-500">Data ini akan muncul di header lembar soal</p>
+              </div>
+            </div>
+            {showIdentity ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
           </button>
-          
+
           {showIdentity && (
             <div className="p-6 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-5 animate-fade-in">
               <div>
@@ -183,8 +198,8 @@ const QuizGenerator: React.FC<QuizGeneratorProps> = ({ onSubmit, isLoading }) =>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase">Semester</label>
                 <select name="semester" value={identity.semester} onChange={handleIdentityChange} className="w-full px-4 py-2 border rounded-lg text-sm mt-1 focus:ring-2 focus:ring-violet-200 outline-none bg-white">
-                    <option value="1 (Ganjil)">1 (Ganjil)</option>
-                    <option value="2 (Genap)">2 (Genap)</option>
+                  <option value="1 (Ganjil)">1 (Ganjil)</option>
+                  <option value="2 (Genap)">2 (Genap)</option>
                 </select>
               </div>
             </div>
@@ -193,109 +208,110 @@ const QuizGenerator: React.FC<QuizGeneratorProps> = ({ onSubmit, isLoading }) =>
 
         {/* Upload Area */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="space-y-4">
+            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+              <Upload className="w-4 h-4 text-violet-600" /> Unggah Materi (PDF)
+            </label>
+
+            {!file ? (
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl h-64 flex flex-col items-center justify-center cursor-pointer transition-all ${isDragging ? 'border-violet-500 bg-violet-50' : 'border-slate-300 hover:border-violet-400 hover:bg-slate-50'}`}
+              >
+                <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center mb-4 text-violet-600">
+                  <FileText className="w-8 h-8" />
+                </div>
+                <p className="font-bold text-slate-700">Klik untuk upload atau drag PDF</p>
+                <p className="text-xs text-slate-400 mt-2">Maksimal 10MB</p>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+            ) : (
+              <div className="border border-violet-200 bg-violet-50 rounded-2xl p-6 relative h-64 flex flex-col items-center justify-center text-center">
+                <button
+                  type="button"
+                  onClick={removeFile}
+                  className="absolute top-4 right-4 p-1.5 bg-white text-slate-400 hover:text-red-500 rounded-full shadow-sm hover:shadow-md transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <FileText className="w-16 h-16 text-violet-600 mb-4" />
+                <p className="font-bold text-violet-900 line-clamp-2 px-4">{file.name}</p>
+                <p className="text-xs text-violet-600 mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                <div className="flex items-center gap-2 mt-4 px-4 py-1.5 bg-white rounded-full text-xs font-bold text-green-600 border border-green-200">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Siap Diproses
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-6">
             <div className="space-y-4">
-                <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-violet-600" /> Unggah Materi (PDF)
-                </label>
-                
-                {!file ? (
-                    <div 
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        onClick={() => fileInputRef.current?.click()}
-                        className={`border-2 border-dashed rounded-2xl h-64 flex flex-col items-center justify-center cursor-pointer transition-all ${isDragging ? 'border-violet-500 bg-violet-50' : 'border-slate-300 hover:border-violet-400 hover:bg-slate-50'}`}
-                    >
-                        <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center mb-4 text-violet-600">
-                            <FileText className="w-8 h-8" />
-                        </div>
-                        <p className="font-bold text-slate-700">Klik untuk upload atau drag PDF</p>
-                        <p className="text-xs text-slate-400 mt-2">Maksimal 10MB</p>
-                        <input 
-                            type="file" 
-                            accept="application/pdf" 
-                            ref={fileInputRef} 
-                            onChange={handleFileChange} 
-                            className="hidden" 
-                        />
-                    </div>
+              <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-violet-600" /> Konfigurasi Soal
+              </label>
+
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Mata Pelajaran</label>
+                <div className="relative">
+                  <input type="text" value={mataPelajaran} onChange={(e) => setMataPelajaran(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 outline-none transition-all" placeholder="Contoh: IPA / Sejarah" />
+                  <BookOpen className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Topik / Materi Spesifik</label>
+                <input type="text" value={topik} onChange={(e) => setTopik(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 outline-none transition-all" placeholder="Otomatis dari nama file (bisa diedit)" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Jumlah Soal</label>
+                  <div className="relative">
+                    <input type="number" min={1} max={50} value={jumlahSoal} onChange={(e) => setJumlahSoal(parseInt(e.target.value))} className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 outline-none transition-all" />
+                    <Calculator className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Jenis Soal</label>
+                  <div className="relative">
+                    <select value={jenisSoal} onChange={(e) => setJenisSoal(e.target.value as any)} className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 outline-none transition-all bg-white appearance-none">
+                      <option value="Pilihan Ganda">Pilihan Ganda</option>
+                      <option value="Esai">Esai / Uraian</option>
+                      <option value="Campuran">Campuran</option>
+                    </select>
+                    <PenTool className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isLoading || !file || !hasApiKey}
+                className={`w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-2 group relative overflow-hidden ${!file || !hasApiKey ? 'bg-slate-300 cursor-not-allowed' : styles.button}`}
+              >
+                {isLoading ? (
+                  <span className="flex items-center gap-2">Memproses PDF...</span>
                 ) : (
-                    <div className="border border-violet-200 bg-violet-50 rounded-2xl p-6 relative h-64 flex flex-col items-center justify-center text-center">
-                         <button 
-                            type="button" 
-                            onClick={removeFile}
-                            className="absolute top-4 right-4 p-1.5 bg-white text-slate-400 hover:text-red-500 rounded-full shadow-sm hover:shadow-md transition-all"
-                         >
-                            <X className="w-4 h-4" />
-                         </button>
-                         <FileText className="w-16 h-16 text-violet-600 mb-4" />
-                         <p className="font-bold text-violet-900 line-clamp-2 px-4">{file.name}</p>
-                         <p className="text-xs text-violet-600 mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                         <div className="flex items-center gap-2 mt-4 px-4 py-1.5 bg-white rounded-full text-xs font-bold text-green-600 border border-green-200">
-                             <CheckCircle2 className="w-3.5 h-3.5" /> Siap Diproses
-                         </div>
-                    </div>
+                  <>
+                    <Sparkles className="w-5 h-5 animate-pulse" /> Buat Soal Sekarang
+                  </>
                 )}
+              </button>
+              {!file && <p className="text-center text-xs text-slate-400 mt-2">Upload file PDF untuk mengaktifkan tombol</p>}
+              {file && !hasApiKey && <p className="text-center text-xs text-amber-600 mt-2">Masukkan API Key terlebih dahulu di banner di atas</p>}
             </div>
-
-            <div className="space-y-6">
-                <div className="space-y-4">
-                     <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                        <Layers className="w-4 h-4 text-violet-600" /> Konfigurasi Soal
-                    </label>
-                    
-                    <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Mata Pelajaran</label>
-                        <div className="relative">
-                            <input type="text" value={mataPelajaran} onChange={(e) => setMataPelajaran(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 outline-none transition-all" placeholder="Contoh: IPA / Sejarah" />
-                            <BookOpen className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Topik / Materi Spesifik</label>
-                        <input type="text" value={topik} onChange={(e) => setTopik(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 outline-none transition-all" placeholder="Otomatis dari nama file (bisa diedit)" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                             <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Jumlah Soal</label>
-                             <div className="relative">
-                                <input type="number" min={1} max={50} value={jumlahSoal} onChange={(e) => setJumlahSoal(parseInt(e.target.value))} className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 outline-none transition-all" />
-                                <Calculator className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                             </div>
-                        </div>
-                        <div>
-                             <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Jenis Soal</label>
-                             <div className="relative">
-                                <select value={jenisSoal} onChange={(e) => setJenisSoal(e.target.value as any)} className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 outline-none transition-all bg-white appearance-none">
-                                    <option value="Pilihan Ganda">Pilihan Ganda</option>
-                                    <option value="Esai">Esai / Uraian</option>
-                                    <option value="Campuran">Campuran</option>
-                                </select>
-                                <PenTool className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="pt-2">
-                    <button
-                        type="submit"
-                        disabled={isLoading || !file}
-                        className={`w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-2 group relative overflow-hidden ${!file ? 'bg-slate-300 cursor-not-allowed' : styles.button}`}
-                    >
-                         {isLoading ? (
-                            <span className="flex items-center gap-2">Memproses PDF...</span>
-                         ) : (
-                            <>
-                                <Sparkles className="w-5 h-5 animate-pulse" /> Buat Soal Sekarang
-                            </>
-                         )}
-                    </button>
-                    {!file && <p className="text-center text-xs text-slate-400 mt-2">Upload file PDF untuk mengaktifkan tombol</p>}
-                </div>
-            </div>
+          </div>
         </div>
       </form>
     </div>

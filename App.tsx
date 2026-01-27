@@ -205,9 +205,9 @@ const App: React.FC = () => {
 
                         {currentView === 'form' ? (
                             activeCategory === AppCategory.Kuis ? (
-                                <QuizGenerator onSubmit={handleQuizSubmit} isLoading={isProcessing} />
+                                <QuizGenerator onSubmit={handleQuizSubmit} isLoading={isProcessing} onOpenSettings={() => setIsSettingsOpen(true)} />
                             ) : (
-                                <ModulGenerator category={activeCategory} onSubmit={handleAdminSubmit} isLoading={isProcessing} />
+                                <ModulGenerator category={activeCategory} onSubmit={handleAdminSubmit} isLoading={isProcessing} onOpenSettings={() => setIsSettingsOpen(true)} />
                             )
                         ) : (
                             activeDoc && (

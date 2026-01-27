@@ -4,15 +4,18 @@ import {
   Users, Zap, UserCircle, LayoutDashboard, CheckSquare,
   FileText, Lightbulb, BookOpen, GraduationCap, Clock,
   Book, Briefcase, Sparkles, Star, Target, Palette, Box,
-  ChevronDown, ChevronUp, AlertCircle, Quote, HeartHandshake
+  ChevronDown, ChevronUp, AlertCircle, Quote, HeartHandshake, Key
 } from 'lucide-react';
 import { getMataPelajaranByFase, getElemenCPByMapel } from '../data/kurikulumData';
+import { useApiKey } from '../hooks/useApiKey';
+import ApiKeyBanner from './ApiKeyBanner';
 
 interface ModulGeneratorProps {
   category: AppCategory;
   onSubmit: (data: AdminRequest, selectedTypes: AdminDocType[]) => void;
   isLoading: boolean;
   loadingStatus?: string;
+  onOpenSettings?: () => void;
 }
 
 // Colors helper based on category
@@ -88,8 +91,14 @@ const InputWrapper = ({ label, icon: Icon, children, tip, accentClass }: any) =>
   </div>
 );
 
-const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isLoading, loadingStatus }) => {
+const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isLoading, loadingStatus, onOpenSettings }) => {
   const styles = getCategoryStyles(category);
+  const { hasApiKey, refreshApiKey } = useApiKey();
+
+  // Refresh API key status when component mounts or settings might have changed
+  useEffect(() => {
+    refreshApiKey();
+  }, [refreshApiKey]);
 
   const [identity, setIdentity] = useState<TeacherIdentity>({
     nama: '',
@@ -559,6 +568,11 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
 
       <form onSubmit={handleSubmit} className="px-6 py-8 sm:px-10 space-y-8">
 
+        {/* API Key Warning Banner */}
+        {!hasApiKey && onOpenSettings && (
+          <ApiKeyBanner onOpenSettings={onOpenSettings} />
+        )}
+
         {/* Identity Card (Collapsible) */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
           <button
@@ -676,8 +690,8 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
         <div className="pt-4 pb-8">
           <button
             type="submit"
-            disabled={isLoading || (category === AppCategory.Administrasi && selectedDocs.length === 0)}
-            className={`w-full py-5 rounded-2xl text-white font-bold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3 relative overflow-hidden group ${styles.button}`}
+            disabled={isLoading || !hasApiKey || (category === AppCategory.Administrasi && selectedDocs.length === 0)}
+            className={`w-full py-5 rounded-2xl text-white font-bold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3 relative overflow-hidden group ${!hasApiKey ? 'bg-slate-400 cursor-not-allowed' : styles.button}`}
           >
             {/* Glossy Effect */}
             <div className="absolute top-0 left-0 w-full h-1/2 bg-white/10 pointer-events-none"></div>
