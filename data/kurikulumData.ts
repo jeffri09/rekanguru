@@ -1,10 +1,30 @@
 /**
- * Data Kurikulum Merdeka Indonesia
+ * Data Kurikulum Merdeka Indonesia 2025
  * Mapping Fase → Mata Pelajaran → Elemen CP
- * Sesuai dengan standar Kemendikbudristek
+ * Sesuai dengan BSKAP 046/H/KR/2025 dan Permendikdasmen No. 10 Tahun 2025
+ * 
+ * 8 Dimensi Profil Lulusan (menggantikan 6 Dimensi P5)
  */
 
 import { Fase } from '../types';
+
+// ========================================
+// 8 DIMENSI PROFIL LULUSAN (2025)
+// Permendikdasmen No. 10 Tahun 2025
+// ========================================
+
+export const DIMENSI_PROFIL_LULUSAN = [
+    "Keimanan dan Ketakwaan terhadap Tuhan Yang Maha Esa",
+    "Kewargaan",
+    "Penalaran Kritis",
+    "Kreativitas",
+    "Kolaborasi",
+    "Kemandirian",
+    "Kesehatan",
+    "Komunikasi"
+] as const;
+
+export type DimensiProfilLulusan = typeof DIMENSI_PROFIL_LULUSAN[number];
 
 // ========================================
 // MATA PELAJARAN PER FASE
