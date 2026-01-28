@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { Sparkles, FileText, Menu, X, ChevronLeft, Loader2, BrainCircuit, Trash2, Settings } from 'lucide-react';
+import { Sparkles, FileText, Menu, X, ChevronLeft, Loader2, Trash2, Settings } from 'lucide-react';
 import ModulGenerator from './components/ModulGenerator';
 import QuizGenerator from './components/QuizGenerator';
 import ResultDisplay from './components/ResultDisplay';
@@ -41,6 +41,7 @@ const App: React.FC = () => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [loadingStatus, setLoadingStatus] = useState('');
 
     useEffect(() => {
         try {
@@ -54,16 +55,48 @@ const App: React.FC = () => {
         if (isProcessing) return;
         setIsProcessing(true);
         setProgress(5);
+        setLoadingStatus('Mempersiapkan...');
+
         try {
-            const docType = selectedTypes[0] || AdminDocType.ModulAjar;
-            const content = await generateAdminDocs(data, (p) => setProgress(p));
+            const totalDocs = selectedTypes.length;
+            const allContents: string[] = [];
+
+            // Loop through all selected document types
+            for (let i = 0; i < totalDocs; i++) {
+                const docType = selectedTypes[i];
+                setLoadingStatus(`Membuat ${docType} (${i + 1}/${totalDocs})...`);
+
+                // Calculate progress: base progress for completed docs + current doc progress
+                const baseProgress = Math.round((i / totalDocs) * 100);
+                const progressPerDoc = 100 / totalDocs;
+
+                const content = await generateAdminDocs(
+                    { ...data, docType },
+                    (p) => setProgress(Math.round(baseProgress + (p * progressPerDoc / 100)))
+                );
+
+                // Add document with separator
+                if (totalDocs > 1) {
+                    allContents.push(`\n\n---\n\n# 📄 ${docType}\n\n${content}`);
+                } else {
+                    allContents.push(content);
+                }
+            }
+
+            setLoadingStatus('Menyimpan dokumen...');
+            setProgress(98);
+
+            const combinedContent = allContents.join('\n');
+            const titleSuffix = totalDocs > 1
+                ? `${totalDocs} Dokumen - ${data.mataPelajaran || 'Umum'}`
+                : `${selectedTypes[0]} - ${data.mataPelajaran || 'Umum'}`;
 
             const newDoc: GeneratedDocument = {
                 id: Date.now().toString(),
-                title: `${docType} - ${data.mataPelajaran || 'Umum'}`,
+                title: titleSuffix,
                 type: 'admin',
-                content: content,
-                metadata: { identity: data.identity, docType, category: activeCategory },
+                content: combinedContent,
+                metadata: { identity: data.identity, docType: selectedTypes[0], category: activeCategory },
                 createdAt: Date.now()
             };
 
@@ -75,6 +108,7 @@ const App: React.FC = () => {
         } finally {
             setIsProcessing(false);
             setProgress(0);
+            setLoadingStatus('');
         }
     };
 
@@ -191,14 +225,14 @@ const App: React.FC = () => {
                 <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
                     <div className="max-w-5xl mx-auto pb-20">
                         {isProcessing && (
-                            <div className="mb-8 p-6 bg-white rounded-2xl border border-indigo-100 shadow-lg shadow-indigo-100/50 flex flex-col items-center gap-4 animate-pulse">
+                            <div className="mb-8 p-6 bg-white rounded-2xl border border-indigo-100 shadow-lg shadow-indigo-100/50 flex flex-col items-center gap-4">
                                 <Loader2 className="animate-spin text-indigo-600 w-8 h-8" />
                                 <div className="text-center">
-                                    <p className="text-sm font-bold text-slate-800">AI sedang menyusun dokumen... {progress}%</p>
-                                    <p className="text-xs text-slate-500 mt-1">Harap tunggu, ini memerlukan waktu beberapa saat.</p>
+                                    <p className="text-sm font-bold text-slate-800">{loadingStatus || 'Memproses...'}</p>
+                                    <p className="text-xs text-slate-500 mt-1">Progress: {progress}% - Harap tunggu</p>
                                 </div>
-                                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden max-w-xs">
-                                    <div className="bg-indigo-600 h-full transition-all duration-300 shadow-[0_0_8px_rgba(79,70,229,0.4)]" style={{ width: `${progress}%` }} />
+                                <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden max-w-md">
+                                    <div className="bg-gradient-to-r from-indigo-500 to-violet-500 h-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(79,70,229,0.5)]" style={{ width: `${progress}%` }} />
                                 </div>
                             </div>
                         )}
@@ -207,7 +241,7 @@ const App: React.FC = () => {
                             activeCategory === AppCategory.Kuis ? (
                                 <QuizGenerator onSubmit={handleQuizSubmit} isLoading={isProcessing} onOpenSettings={() => setIsSettingsOpen(true)} />
                             ) : (
-                                <ModulGenerator category={activeCategory} onSubmit={handleAdminSubmit} isLoading={isProcessing} onOpenSettings={() => setIsSettingsOpen(true)} />
+                                <ModulGenerator category={activeCategory} onSubmit={handleAdminSubmit} isLoading={isProcessing} loadingStatus={loadingStatus} onOpenSettings={() => setIsSettingsOpen(true)} />
                             )
                         ) : (
                             activeDoc && (

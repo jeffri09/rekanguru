@@ -30,6 +30,7 @@ const QuizGenerator: React.FC<QuizGeneratorProps> = ({ onSubmit, isLoading, onOp
     nama: '',
     nip: '',
     sekolah: '',
+    kota: '',
     kepalaSekolah: '',
     nipKepala: '',
     semester: '2 (Genap)',
