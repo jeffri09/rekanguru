@@ -43,7 +43,7 @@ const getActiveGenAI = (): GoogleGenAI => {
     const customKey = localStorage.getItem('custom_gemini_api_key');
     if (customKey && customKey.trim().length > 10) {
       console.log(`[API Custom] Using User-Provided API Key`);
-      return new GoogleGenAI({ apiKey: customKey });
+      return new GoogleGenAI({ apiKey: customKey, apiVersion: 'v1beta' });
     }
   }
 
@@ -60,7 +60,7 @@ const getActiveGenAI = (): GoogleGenAI => {
     console.log(`[API Rotation] Rotating to key index: ${currentKeyIndex}`);
   }
 
-  return new GoogleGenAI({ apiKey: API_KEYS[currentKeyIndex] });
+  return new GoogleGenAI({ apiKey: API_KEYS[currentKeyIndex], apiVersion: 'v1beta' });
 };
 
 // Fungsi untuk memaksa rotasi jika kena error (misal Rate Limit)
