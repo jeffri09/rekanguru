@@ -2,19 +2,40 @@ import { GoogleGenAI } from "@google/genai";
 import { AdminRequest, AdminDocType, QuizRequest } from "../types";
 
 // Inisialisasi AI dengan API Key
-// API Key harus diset melalui Settings Modal atau environment variable
+// Mendukung rotasi multiple API keys untuk menangani banyak user
 const API_KEYS: string[] = [];
 
-// Fallback ke .env jika tersedia dan bukan placeholder
-if (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'PLACEHOLDER_API_KEY') {
-  console.log("[Init] Using API Key from environment variable");
-  API_KEYS.push(process.env.GEMINI_API_KEY);
+// Load multiple API keys from environment (GEMINI_API_KEY_1 through GEMINI_API_KEY_10)
+if (typeof process !== 'undefined' && process.env) {
+  for (let i = 1; i <= 10; i++) {
+    const keyName = `GEMINI_API_KEY_${i}`;
+    const key = process.env[keyName];
+    if (key && key !== 'PLACEHOLDER_API_KEY' && key.trim().length > 10) {
+      API_KEYS.push(key);
+      console.log(`[Init] Loaded API Key ${i}`);
+    }
+  }
 }
+
+// Fallback ke single GEMINI_API_KEY jika ada
+if (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'PLACEHOLDER_API_KEY') {
+  // Avoid duplicate if already loaded as GEMINI_API_KEY_1
+  if (!API_KEYS.includes(process.env.GEMINI_API_KEY)) {
+    console.log("[Init] Using fallback GEMINI_API_KEY");
+    API_KEYS.push(process.env.GEMINI_API_KEY);
+  }
+}
+
+console.log(`[Init] Total ${API_KEYS.length} API Key(s) loaded for rotation`);
 
 // State rotasi
 let currentKeyIndex = 0;
 let lastRotationTime = Date.now();
 const ROTATION_INTERVAL = 6000; // 6 detik
+
+// State untuk delay antar request (mencegah rate limit)
+let lastRequestTime = 0;
+const REQUEST_DELAY = 5000; // 5 detik delay antar request
 
 const getActiveGenAI = (): GoogleGenAI => {
   // Cek Custom API Key dari LocalStorage (jika ada)
@@ -102,6 +123,20 @@ const getErrorMessage = (error: GeminiError): string => {
 // Delay utility for retry
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Tunggu delay antar request untuk mencegah rate limit
+const waitForDelay = async (): Promise<void> => {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+
+  if (lastRequestTime > 0 && timeSinceLastRequest < REQUEST_DELAY) {
+    const waitTime = REQUEST_DELAY - timeSinceLastRequest;
+    console.log(`[Rate Limit Protection] Waiting ${waitTime}ms before next request...`);
+    await delay(waitTime);
+  }
+
+  lastRequestTime = Date.now();
+};
+
 // Retry wrapper with exponential backoff
 const withRetry = async <T>(
   fn: () => Promise<T>,
@@ -177,6 +212,9 @@ ATURAN FORMAT WAJIB:
   * Indeks: $x_1$ atau $x_{12}$`;
 
   return withRetry(async () => {
+    // Wait for delay to prevent rate limiting
+    await waitForDelay();
+
     // Get fresh AI instance (might be rotated)
     const aiInstance = getAi();
     const response = await aiInstance.models.generateContent({
@@ -358,6 +396,9 @@ PENTING - JANGAN BUAT BAGIAN TANDA TANGAN:
   const prompt = buildPrompt();
 
   return withRetry(async () => {
+    // Wait for delay to prevent rate limiting
+    await waitForDelay();
+
     // Get fresh AI instance (might be rotated)
     const aiInstance = getAi();
     const result = await aiInstance.models.generateContentStream({

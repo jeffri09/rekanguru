@@ -130,3 +130,20 @@ export interface AppState {
   activeDocumentId: string | null;
   error: string | null;
 }
+
+// Progress tracking for resumable document generation
+export interface CompletedDocItem {
+  docType: AdminDocType;
+  content: string;
+  timestamp: number;
+}
+
+export interface GenerationProgress {
+  sessionId: string;
+  requestData: AdminRequest;
+  selectedTypes: AdminDocType[];
+  completedDocs: CompletedDocItem[];
+  pendingTypes: AdminDocType[];
+  lastError?: string;
+  status: 'in_progress' | 'completed' | 'error' | 'paused';
+}

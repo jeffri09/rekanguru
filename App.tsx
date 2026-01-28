@@ -4,8 +4,12 @@ import ModulGenerator from './components/ModulGenerator';
 import QuizGenerator from './components/QuizGenerator';
 import ResultDisplay from './components/ResultDisplay';
 import SettingsModal from './components/SettingsModal';
+import RateLimitBanner from './components/RateLimitBanner';
+import GenerationProgressPanel from './components/GenerationProgressPanel';
 import { generateAdminDocs, generateQuizFromPDF } from './services/geminiService';
-import { AppCategory, GeneratedDocument, AdminRequest, AdminDocType, QuizRequest } from './types';
+import { AppCategory, GeneratedDocument, AdminRequest, AdminDocType, QuizRequest, GenerationProgress } from './types';
+
+const PROGRESS_STORAGE_KEY = 'rekanGuruProgress';
 
 const App: React.FC = () => {
     // Gunakan useLayoutEffect agar perubahan DOM terjadi sinkron sebelum browser painting
@@ -34,6 +38,25 @@ const App: React.FC = () => {
         }
     });
 
+    // State untuk progress yang bisa dilanjutkan
+    const [generationProgress, setGenerationProgress] = useState<GenerationProgress | null>(() => {
+        if (typeof window === 'undefined') return null;
+        try {
+            const saved = localStorage.getItem(PROGRESS_STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // Hanya kembalikan jika masih ada yang pending
+                if (parsed && parsed.pendingTypes && parsed.pendingTypes.length > 0) {
+                    return parsed;
+                }
+            }
+            return null;
+        } catch (e) {
+            console.error("Corrupted progress storage:", e);
+            return null;
+        }
+    });
+
     const [currentView, setCurrentView] = useState<'form' | 'results'>('form');
     const [activeCategory, setActiveCategory] = useState<AppCategory>(AppCategory.Administrasi);
     const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
@@ -42,6 +65,8 @@ const App: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
     const [loadingStatus, setLoadingStatus] = useState('');
+    const [showRateLimitError, setShowRateLimitError] = useState(false);
+    const [rateLimitErrorMessage, setRateLimitErrorMessage] = useState('');
 
     useEffect(() => {
         try {
@@ -51,38 +76,109 @@ const App: React.FC = () => {
         }
     }, [documents]);
 
-    const handleAdminSubmit = async (data: AdminRequest, selectedTypes: AdminDocType[]) => {
+    // Save generation progress to localStorage
+    const saveProgress = (progressData: GenerationProgress) => {
+        try {
+            localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(progressData));
+            setGenerationProgress(progressData);
+        } catch (e) {
+            console.error("Gagal menyimpan progress:", e);
+        }
+    };
+
+    // Clear generation progress
+    const clearProgress = () => {
+        try {
+            localStorage.removeItem(PROGRESS_STORAGE_KEY);
+            setGenerationProgress(null);
+            setShowRateLimitError(false);
+        } catch (e) {
+            console.error("Gagal menghapus progress:", e);
+        }
+    };
+
+    // Core document generation with partial save
+    const handleAdminSubmit = async (data: AdminRequest, selectedTypes: AdminDocType[], existingProgress?: GenerationProgress) => {
         if (isProcessing) return;
         setIsProcessing(true);
         setProgress(5);
         setLoadingStatus('Mempersiapkan...');
+        setShowRateLimitError(false);
+
+        // Initialize or use existing progress
+        const sessionId = existingProgress?.sessionId || Date.now().toString();
+        const currentProgress: GenerationProgress = existingProgress || {
+            sessionId,
+            requestData: data,
+            selectedTypes,
+            completedDocs: [],
+            pendingTypes: [...selectedTypes],
+            status: 'in_progress'
+        };
+        currentProgress.status = 'in_progress';
+        currentProgress.lastError = undefined;
+        saveProgress(currentProgress);
+
+        const totalDocs = selectedTypes.length;
+        const allContents: string[] = [...currentProgress.completedDocs.map(d => `\n\n---\n\n# 📄 ${d.docType}\n\n${d.content}`)];
 
         try {
-            const totalDocs = selectedTypes.length;
-            const allContents: string[] = [];
+            // Start from pending types
+            for (let i = 0; i < currentProgress.pendingTypes.length; i++) {
+                const docType = currentProgress.pendingTypes[i];
+                const completedCount = currentProgress.completedDocs.length;
+                const overallIndex = completedCount + i;
 
-            // Loop through all selected document types
-            for (let i = 0; i < totalDocs; i++) {
-                const docType = selectedTypes[i];
-                setLoadingStatus(`Membuat ${docType} (${i + 1}/${totalDocs})...`);
+                setLoadingStatus(`Membuat ${docType} (${overallIndex + 1}/${totalDocs})...`);
 
                 // Calculate progress: base progress for completed docs + current doc progress
-                const baseProgress = Math.round((i / totalDocs) * 100);
+                const baseProgress = Math.round((overallIndex / totalDocs) * 100);
                 const progressPerDoc = 100 / totalDocs;
 
-                const content = await generateAdminDocs(
-                    { ...data, docType },
-                    (p) => setProgress(Math.round(baseProgress + (p * progressPerDoc / 100)))
-                );
+                try {
+                    const content = await generateAdminDocs(
+                        { ...data, docType },
+                        (p) => setProgress(Math.round(baseProgress + (p * progressPerDoc / 100)))
+                    );
 
-                // Add document with separator
-                if (totalDocs > 1) {
-                    allContents.push(`\n\n---\n\n# 📄 ${docType}\n\n${content}`);
-                } else {
-                    allContents.push(content);
+                    // Save immediately after success!
+                    currentProgress.completedDocs.push({
+                        docType,
+                        content,
+                        timestamp: Date.now()
+                    });
+                    currentProgress.pendingTypes = currentProgress.pendingTypes.filter(t => t !== docType);
+                    saveProgress(currentProgress);
+
+                    // Add to contents
+                    if (totalDocs > 1) {
+                        allContents.push(`\n\n---\n\n# 📄 ${docType}\n\n${content}`);
+                    } else {
+                        allContents.push(content);
+                    }
+                } catch (docError: any) {
+                    // Save error state but DON'T lose progress!
+                    currentProgress.status = 'error';
+                    currentProgress.lastError = docError.message || 'Gagal membuat dokumen';
+                    currentProgress.pendingTypes = currentProgress.pendingTypes.filter(t => t !== docType);
+                    currentProgress.pendingTypes.unshift(docType); // Put failed doc at front
+                    saveProgress(currentProgress);
+
+                    // Check if it's rate limit error
+                    const errorMsg = docError.message || '';
+                    if (errorMsg.includes('429') || errorMsg.includes('Rate Limit') || errorMsg.includes('quota') || errorMsg.includes('Batas')) {
+                        setShowRateLimitError(true);
+                        setRateLimitErrorMessage(errorMsg);
+                    }
+
+                    setIsProcessing(false);
+                    setProgress(0);
+                    setLoadingStatus('');
+                    return; // Stop but keep saved progress
                 }
             }
 
+            // All completed!
             setLoadingStatus('Menyimpan dokumen...');
             setProgress(98);
 
@@ -103,8 +199,22 @@ const App: React.FC = () => {
             setDocuments(prev => [newDoc, ...prev]);
             setActiveDocumentId(newDoc.id);
             setCurrentView('results');
+
+            // Clear progress since completed
+            currentProgress.status = 'completed';
+            clearProgress();
+
         } catch (error: any) {
-            alert("Kendala AI: " + (error.message || "Gagal menghubungi Gemini"));
+            // Unexpected error - still save what we have
+            currentProgress.status = 'error';
+            currentProgress.lastError = error.message || 'Terjadi kesalahan';
+            saveProgress(currentProgress);
+
+            const errorMsg = error.message || '';
+            if (errorMsg.includes('429') || errorMsg.includes('Rate Limit') || errorMsg.includes('quota')) {
+                setShowRateLimitError(true);
+                setRateLimitErrorMessage(errorMsg);
+            }
         } finally {
             setIsProcessing(false);
             setProgress(0);
@@ -112,10 +222,42 @@ const App: React.FC = () => {
         }
     };
 
+    // Resume generation from saved progress
+    const handleResumeGeneration = async () => {
+        if (!generationProgress || generationProgress.pendingTypes.length === 0) return;
+        setShowRateLimitError(false);
+        await handleAdminSubmit(
+            generationProgress.requestData,
+            generationProgress.selectedTypes,
+            generationProgress
+        );
+    };
+
+    // Download completed documents from progress
+    const handleDownloadCompleted = () => {
+        if (!generationProgress || generationProgress.completedDocs.length === 0) return;
+
+        const content = generationProgress.completedDocs
+            .map(d => `# 📄 ${d.docType}\n\n${d.content}`)
+            .join('\n\n---\n\n');
+
+        const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `dokumen-parsial-${Date.now()}.md`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     const handleQuizSubmit = async (data: QuizRequest) => {
         if (isProcessing) return;
         setIsProcessing(true);
         setProgress(10);
+        setShowRateLimitError(false);
+
         try {
             const content = await generateQuizFromPDF(data, (p) => setProgress(p));
             const newDoc: GeneratedDocument = {
@@ -130,7 +272,13 @@ const App: React.FC = () => {
             setActiveDocumentId(newDoc.id);
             setCurrentView('results');
         } catch (error: any) {
-            alert("Kendala AI: " + (error.message || "Gagal memproses PDF"));
+            const errorMsg = error.message || '';
+            if (errorMsg.includes('429') || errorMsg.includes('Rate Limit') || errorMsg.includes('quota')) {
+                setShowRateLimitError(true);
+                setRateLimitErrorMessage(errorMsg);
+            } else {
+                alert("Kendala AI: " + (error.message || "Gagal memproses PDF"));
+            }
         } finally {
             setIsProcessing(false);
             setProgress(0);
@@ -224,12 +372,38 @@ const App: React.FC = () => {
 
                 <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
                     <div className="max-w-5xl mx-auto pb-20">
+
+                        {/* Rate Limit Error Banner */}
+                        {showRateLimitError && (
+                            <RateLimitBanner
+                                onOpenSettings={() => setIsSettingsOpen(true)}
+                                onRetry={generationProgress ? handleResumeGeneration : undefined}
+                                errorMessage={rateLimitErrorMessage}
+                            />
+                        )}
+
+                        {/* Generation Progress Panel - Show if there's pending work */}
+                        {generationProgress && generationProgress.pendingTypes.length > 0 && !isProcessing && (
+                            <GenerationProgressPanel
+                                progress={generationProgress}
+                                onResume={handleResumeGeneration}
+                                onDownloadCompleted={handleDownloadCompleted}
+                                onClear={clearProgress}
+                                isResuming={isProcessing}
+                            />
+                        )}
+
                         {isProcessing && (
                             <div className="mb-8 p-6 bg-white rounded-2xl border border-indigo-100 shadow-lg shadow-indigo-100/50 flex flex-col items-center gap-4">
                                 <Loader2 className="animate-spin text-indigo-600 w-8 h-8" />
                                 <div className="text-center">
                                     <p className="text-sm font-bold text-slate-800">{loadingStatus || 'Memproses...'}</p>
                                     <p className="text-xs text-slate-500 mt-1">Progress: {progress}% - Harap tunggu</p>
+                                    {generationProgress && generationProgress.completedDocs.length > 0 && (
+                                        <p className="text-xs text-green-600 mt-2">
+                                            ✅ {generationProgress.completedDocs.length} dokumen sudah tersimpan otomatis
+                                        </p>
+                                    )}
                                 </div>
                                 <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden max-w-md">
                                     <div className="bg-gradient-to-r from-indigo-500 to-violet-500 h-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(79,70,229,0.5)]" style={{ width: `${progress}%` }} />
