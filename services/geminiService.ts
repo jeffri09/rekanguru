@@ -35,7 +35,7 @@ const ROTATION_INTERVAL = 6000; // 6 detik
 
 // State untuk delay antar request (mencegah rate limit)
 let lastRequestTime = 0;
-const REQUEST_DELAY = 5000; // 5 detik delay antar request
+const REQUEST_DELAY = 10000; // 10 detik delay antar request
 
 const getActiveGenAI = (): GoogleGenAI => {
   // Cek Custom API Key dari LocalStorage (jika ada)
@@ -401,21 +401,13 @@ PENTING - JANGAN BUAT BAGIAN TANDA TANGAN:
 
     // Get fresh AI instance (might be rotated)
     const aiInstance = getAi();
-    const result = await aiInstance.models.generateContentStream({
+    const result = await aiInstance.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ role: "user", parts: [{ text: prompt }] }]
     });
 
-    let fullText = "";
-    for await (const chunk of result) {
-      if (chunk.text) {
-        fullText += chunk.text;
-        if (onProgress) onProgress(estimateProgress(fullText.length));
-      }
-    }
-
     if (onProgress) onProgress(100);
-    return fullText;
+    return result.text || "";
   });
 };
 
