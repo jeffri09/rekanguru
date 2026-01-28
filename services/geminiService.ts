@@ -155,11 +155,18 @@ const withRetry = async <T>(
         rotateKeyImmediately();
       }
 
+      console.error(`[Gemini Error] Attempt ${attempt + 1} failed:`, {
+        message: error.message,
+        status: error.status,
+        code: error.code,
+        stack: error.stack,
+        details: error
+      });
+
       if (attempt === maxRetries || !isRetryable) {
         // Throw user-friendly error
         const userMessage = getErrorMessage(error);
-        const enhancedError = new Error(userMessage);
-        throw enhancedError;
+        throw new Error(userMessage); // Simplify throwing to keep stack trace clean if needed
       }
 
       // Wait before retry (exponential backoff)
