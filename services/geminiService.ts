@@ -421,7 +421,7 @@ PENTING - JANGAN BUAT BAGIAN TANDA TANGAN:
 export const testConnection = async (apiKey?: string): Promise<boolean> => {
   try {
     const aiToTest = apiKey
-      ? new GoogleGenAI({ apiKey })
+      ? new GoogleGenAI({ apiKey, apiVersion: 'v1beta' })
       : getAi(); // Use default rotation or existing custom key logic
 
     await aiToTest.models.generateContent({
