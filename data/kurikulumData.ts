@@ -557,3 +557,409 @@ export const isMapelAvailableInFase = (fase: Fase, mataPelajaran: string): boole
     const mapelList = MATA_PELAJARAN_BY_FASE[fase] || [];
     return mapelList.includes(mataPelajaran);
 };
+
+// ========================================
+// MATERI/TOPIK PER ELEMEN CP
+// Berdasarkan Kurikulum Merdeka 2025
+// ========================================
+
+export const MATERI_BY_ELEMEN: Record<string, Record<string, string[]>> = {
+    // === MATEMATIKA ===
+    "Matematika": {
+        "Bilangan": [
+            "Bilangan Cacah dan Operasinya",
+            "Bilangan Bulat dan Operasinya",
+            "Pecahan dan Operasinya",
+            "Bilangan Desimal",
+            "Bilangan Berpangkat dan Akar",
+            "Bilangan Rasional dan Irasional",
+            "Notasi Ilmiah"
+        ],
+        "Aljabar": [
+            "Pola Bilangan dan Barisan",
+            "Bentuk Aljabar",
+            "Persamaan Linear Satu Variabel",
+            "Pertidaksamaan Linear",
+            "Sistem Persamaan Linear Dua Variabel",
+            "Fungsi dan Grafiknya",
+            "Persamaan Kuadrat"
+        ],
+        "Pengukuran": [
+            "Satuan Panjang, Berat, dan Waktu",
+            "Keliling dan Luas Bangun Datar",
+            "Volume dan Luas Permukaan Bangun Ruang",
+            "Pengukuran Sudut"
+        ],
+        "Geometri": [
+            "Bangun Datar (Segitiga, Segiempat, Lingkaran)",
+            "Bangun Ruang (Kubus, Balok, Prisma, Limas)",
+            "Transformasi Geometri",
+            "Kesebangunan dan Kekongruenan",
+            "Teorema Pythagoras",
+            "Trigonometri Dasar"
+        ],
+        "Analisis Data dan Peluang": [
+            "Penyajian Data (Tabel, Diagram)",
+            "Ukuran Pemusatan Data (Mean, Median, Modus)",
+            "Ukuran Penyebaran Data",
+            "Peluang Kejadian",
+            "Frekuensi Harapan"
+        ]
+    },
+
+    // === BAHASA INDONESIA ===
+    "Bahasa Indonesia": {
+        "Menyimak": [
+            "Menyimak Teks Deskripsi",
+            "Menyimak Teks Narasi",
+            "Menyimak Teks Prosedur",
+            "Menyimak Teks Eksposisi",
+            "Menyimak Teks Argumentasi",
+            "Menyimak Berita dan Informasi"
+        ],
+        "Membaca dan Memirsa": [
+            "Membaca Teks Fiksi (Cerpen, Novel)",
+            "Membaca Teks Nonfiksi",
+            "Membaca Kritis dan Analitis",
+            "Memirsa Video dan Media Visual",
+            "Literasi Digital"
+        ],
+        "Berbicara dan Mempresentasikan": [
+            "Presentasi Lisan",
+            "Diskusi dan Debat",
+            "Pidato dan Ceramah",
+            "Bercerita dan Mendongeng"
+        ],
+        "Menulis": [
+            "Menulis Teks Deskripsi",
+            "Menulis Teks Narasi",
+            "Menulis Teks Eksposisi",
+            "Menulis Teks Argumentasi",
+            "Menulis Teks Persuasi",
+            "Menulis Laporan",
+            "Menulis Puisi dan Cerpen"
+        ]
+    },
+
+    // === BIOLOGI ===
+    "Biologi": {
+        "Pemahaman Biologi": [
+            "Struktur dan Fungsi Sel",
+            "Transport Membran (Difusi, Osmosis)",
+            "Pembelahan Sel (Mitosis dan Meiosis)",
+            "Metabolisme Sel dan Enzim",
+            "Sistem Reproduksi Manusia",
+            "Sistem Peredaran Darah",
+            "Sistem Pencernaan Makanan",
+            "Sistem Pernapasan",
+            "Sistem Ekskresi",
+            "Sistem Koordinasi (Saraf dan Hormon)",
+            "Genetika dan Hereditas",
+            "Pertumbuhan dan Perkembangan",
+            "Evolusi dan Biodiversitas",
+            "Bioteknologi Modern"
+        ],
+        "Keterampilan Proses": [
+            "Praktikum Pengamatan Sel",
+            "Praktikum Osmosis dan Difusi",
+            "Praktikum Enzim Katalase",
+            "Praktikum Fotosintesis",
+            "Proyek Penelitian Biologi"
+        ]
+    },
+
+    // === FISIKA ===
+    "Fisika": {
+        "Pemahaman Fisika": [
+            "Besaran dan Satuan",
+            "Kinematika Gerak Lurus",
+            "Dinamika Partikel (Hukum Newton)",
+            "Usaha dan Energi",
+            "Momentum dan Impuls",
+            "Gerak Melingkar",
+            "Gravitasi Newton",
+            "Elastisitas dan Hukum Hooke",
+            "Fluida Statis dan Dinamis",
+            "Suhu dan Kalor",
+            "Gelombang dan Bunyi",
+            "Optika Geometri",
+            "Listrik Statis dan Dinamis",
+            "Kemagnetan dan Induksi Elektromagnetik",
+            "Fisika Modern (Relativitas, Kuantum)"
+        ],
+        "Keterampilan Proses (Mengamati, Mempertanyakan, Memprediksi, Merencanakan, Melakukan Percobaan, Mengolah Data, Mengomunikasikan)": [
+            "Praktikum Gerak Lurus Beraturan",
+            "Praktikum Hukum Newton",
+            "Praktikum Bandul Sederhana",
+            "Praktikum Rangkaian Listrik",
+            "Proyek Penelitian Fisika"
+        ]
+    },
+
+    // === KIMIA ===
+    "Kimia": {
+        "Pemahaman Kimia": [
+            "Struktur Atom dan Sistem Periodik",
+            "Ikatan Kimia",
+            "Stoikiometri",
+            "Larutan dan Konsentrasi",
+            "Termokimia",
+            "Laju Reaksi",
+            "Kesetimbangan Kimia",
+            "Asam dan Basa",
+            "Hidrolisis Garam",
+            "Larutan Penyangga",
+            "Elektrokimia",
+            "Kimia Organik",
+            "Polimer dan Makromolekul"
+        ],
+        "Keterampilan Proses": [
+            "Praktikum Reaksi Kimia",
+            "Praktikum Titrasi Asam Basa",
+            "Praktikum Laju Reaksi",
+            "Praktikum Elektrolisis",
+            "Proyek Penelitian Kimia"
+        ]
+    },
+
+    // === IPA (SMP) ===
+    "Ilmu Pengetahuan Alam (IPA)": {
+        "Pemahaman IPA": [
+            "Zat dan Karakteristiknya",
+            "Suhu dan Kalor",
+            "Gerak dan Gaya",
+            "Usaha dan Energi",
+            "Getaran dan Gelombang",
+            "Bunyi dan Cahaya",
+            "Listrik dan Magnet",
+            "Sistem Organisasi Kehidupan",
+            "Ekosistem dan Lingkungan",
+            "Pemanasan Global",
+            "Tata Surya dan Jagat Raya"
+        ],
+        "Keterampilan Proses": [
+            "Praktikum Pengukuran",
+            "Praktikum Kalor dan Perubahan Wujud",
+            "Praktikum Rangkaian Listrik Sederhana",
+            "Proyek Lingkungan"
+        ]
+    },
+
+    // === IPAS (SD) ===
+    "IPAS (Ilmu Pengetahuan Alam dan Sosial)": {
+        "Pemahaman IPAS (Sains dan Sosial)": [
+            "Tubuh Manusia dan Perawatannya",
+            "Tumbuhan dan Hewan di Sekitarku",
+            "Gaya dan Gerak",
+            "Energi dan Perubahannya",
+            "Bumi dan Alam Semesta",
+            "Cuaca dan Iklim",
+            "Sumber Daya Alam",
+            "Keluarga dan Lingkungan Sosial",
+            "Keragaman Budaya Indonesia",
+            "Tokoh dan Peristiwa Sejarah"
+        ],
+        "Keterampilan Proses": [
+            "Pengamatan Lingkungan Sekitar",
+            "Percobaan Sederhana",
+            "Proyek Keragaman Budaya"
+        ]
+    },
+
+    // === PENDIDIKAN PANCASILA ===
+    "Pendidikan Pancasila": {
+        "Pancasila": [
+            "Nilai-nilai Pancasila dalam Kehidupan",
+            "Penerapan Sila-sila Pancasila",
+            "Pancasila sebagai Dasar Negara",
+            "Pancasila sebagai Pandangan Hidup"
+        ],
+        "Undang-Undang Dasar Negara Republik Indonesia Tahun 1945": [
+            "Pembukaan UUD 1945",
+            "Hak dan Kewajiban Warga Negara",
+            "Lembaga Negara",
+            "Hubungan Pemerintah Pusat dan Daerah"
+        ],
+        "Bhinneka Tunggal Ika": [
+            "Keragaman Suku, Agama, Ras, dan Budaya",
+            "Toleransi dan Menghargai Perbedaan",
+            "Persatuan dalam Keragaman"
+        ],
+        "Negara Kesatuan Republik Indonesia": [
+            "Wilayah NKRI",
+            "Pertahanan dan Keamanan Negara",
+            "Wawasan Nusantara",
+            "Cinta Tanah Air"
+        ]
+    },
+
+    // === INFORMATIKA ===
+    "Informatika": {
+        "Berpikir Komputasional (Computational Thinking)": [
+            "Dekomposisi Masalah",
+            "Pengenalan Pola",
+            "Abstraksi",
+            "Algoritma dan Logika"
+        ],
+        "Teknologi Informasi dan Komunikasi": [
+            "Perangkat Keras dan Lunak",
+            "Pengolah Kata dan Spreadsheet",
+            "Presentasi Digital",
+            "Internet dan Keamanan Digital"
+        ],
+        "Sistem Komputer": [
+            "Arsitektur Komputer",
+            "Sistem Operasi",
+            "Representasi Data"
+        ],
+        "Jaringan Komputer dan Internet": [
+            "Topologi Jaringan",
+            "Protokol Komunikasi",
+            "World Wide Web"
+        ],
+        "Analisis Data": [
+            "Pengumpulan Data",
+            "Visualisasi Data",
+            "Interpretasi Data"
+        ],
+        "Algoritma dan Pemrograman": [
+            "Dasar Pemrograman",
+            "Struktur Data Sederhana",
+            "Pemrograman Visual",
+            "Pengembangan Aplikasi Sederhana"
+        ],
+        "Dampak Sosial Informatika": [
+            "Etika Digital",
+            "Hak Kekayaan Intelektual",
+            "Dampak Media Sosial",
+            "Privasi dan Keamanan Data"
+        ],
+        "Praktik Lintas Bidang": [
+            "Proyek Interdisipliner",
+            "Kolaborasi Digital"
+        ]
+    },
+
+    // === PENDIDIKAN AGAMA ISLAM ===
+    "Pendidikan Agama Islam dan Budi Pekerti": {
+        "Al-Quran dan Hadis": [
+            "Membaca dan Menghafal Al-Quran",
+            "Tajwid dan Tahsin",
+            "Memahami Kandungan Ayat",
+            "Hadis Pilihan"
+        ],
+        "Akidah": [
+            "Iman kepada Allah",
+            "Iman kepada Malaikat",
+            "Iman kepada Kitab-kitab Allah",
+            "Iman kepada Rasul",
+            "Iman kepada Hari Akhir",
+            "Iman kepada Qada dan Qadar"
+        ],
+        "Akhlak": [
+            "Akhlak Terpuji",
+            "Akhlak Tercela",
+            "Adab dalam Islam"
+        ],
+        "Fikih": [
+            "Thaharah (Bersuci)",
+            "Shalat Wajib dan Sunnah",
+            "Puasa",
+            "Zakat dan Infak",
+            "Haji dan Umrah",
+            "Muamalah"
+        ],
+        "Sejarah Peradaban Islam": [
+            "Sejarah Nabi Muhammad SAW",
+            "Khulafaur Rasyidin",
+            "Perkembangan Islam di Indonesia"
+        ]
+    },
+
+    // === SENI (Generic for all Seni) ===
+    "Seni Musik": {
+        "Mengalami (Experiencing)": [
+            "Mendengarkan Karya Musik",
+            "Apresiasi Musik Nusantara",
+            "Apresiasi Musik Mancanegara"
+        ],
+        "Merefleksikan (Reflecting)": [
+            "Analisis Unsur Musik",
+            "Kritik Karya Musik"
+        ],
+        "Berpikir dan Bekerja Artistik (Thinking and Working Artistically)": [
+            "Teknik Vokal",
+            "Bermain Alat Musik",
+            "Membaca Notasi"
+        ],
+        "Menciptakan (Creating)": [
+            "Mengaransemen Lagu",
+            "Menciptakan Lagu Sederhana"
+        ],
+        "Berdampak (Impacting)": [
+            "Pentas Musik",
+            "Kolaborasi Musik"
+        ]
+    },
+    "Seni Rupa": {
+        "Mengalami (Experiencing)": [
+            "Apresiasi Karya Seni Rupa"
+        ],
+        "Merefleksikan (Reflecting)": [
+            "Analisis Karya Seni Rupa"
+        ],
+        "Berpikir dan Bekerja Artistik (Thinking and Working Artistically)": [
+            "Teknik Menggambar",
+            "Teknik Melukis",
+            "Teknik Membentuk"
+        ],
+        "Menciptakan (Creating)": [
+            "Membuat Karya Seni Rupa 2D",
+            "Membuat Karya Seni Rupa 3D"
+        ],
+        "Berdampak (Impacting)": [
+            "Pameran Karya"
+        ]
+    },
+
+    // === PJOK ===
+    "Pendidikan Jasmani, Olahraga, dan Kesehatan": {
+        "Keterampilan Gerak": [
+            "Gerak Lokomotor",
+            "Gerak Non-Lokomotor",
+            "Gerak Manipulatif",
+            "Permainan Bola Besar",
+            "Permainan Bola Kecil",
+            "Atletik",
+            "Senam",
+            "Renang",
+            "Bela Diri"
+        ],
+        "Pengetahuan Gerak": [
+            "Konsep Gerak",
+            "Pola Gerak Dasar",
+            "Kebugaran Jasmani"
+        ],
+        "Pengembangan Karakter dan Internalisasi Nilai-Nilai Gerak": [
+            "Sportivitas",
+            "Kerja Sama Tim",
+            "Disiplin",
+            "Pola Hidup Sehat"
+        ]
+    }
+};
+
+/**
+ * Get materi/topik options based on mata pelajaran and elemen CP
+ */
+export const getMateriByElemen = (
+    mataPelajaran: string | undefined,
+    elemen: string | undefined
+): string[] => {
+    if (!mataPelajaran || !elemen) return [];
+
+    const mapelData = MATERI_BY_ELEMEN[mataPelajaran];
+    if (!mapelData) return [];
+
+    return mapelData[elemen] || [];
+};

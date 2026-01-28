@@ -6,7 +6,7 @@ import {
   Book, Briefcase, Sparkles, Star, Target, Palette, Box,
   ChevronDown, ChevronUp, AlertCircle, Quote, HeartHandshake, Key
 } from 'lucide-react';
-import { getMataPelajaranByFase, getElemenCPByFaseAndMapel } from '../data/kurikulumData';
+import { getMataPelajaranByFase, getElemenCPByFaseAndMapel, getMateriByElemen } from '../data/kurikulumData';
 import { useApiKey } from '../hooks/useApiKey';
 import ApiKeyBanner from './ApiKeyBanner';
 
@@ -136,6 +136,7 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
   const [isManualModel, setIsManualModel] = useState(false);
   const [isManualMapel, setIsManualMapel] = useState(false);
   const [isManualElemen, setIsManualElemen] = useState(false);
+  const [isManualTopik, setIsManualTopik] = useState(false);
 
   const basicDocs = [
     AdminDocType.ModulAjar, AdminDocType.ATP, AdminDocType.AnalisisCP,
@@ -182,6 +183,11 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
     [formData.fase, formData.mataPelajaran]
   );
 
+  const materiOptions = useMemo(() =>
+    getMateriByElemen(formData.mataPelajaran, formData.elemen),
+    [formData.mataPelajaran, formData.elemen]
+  );
+
   // Re-sync single doc selection when category changes
   useEffect(() => {
     if (category === AppCategory.Publikasi) setSelectedSingleDoc(AdminDocType.ProposalPTK);
@@ -199,9 +205,16 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
 
   // Reset elemen when mata pelajaran changes
   useEffect(() => {
-    setFormData(prev => ({ ...prev, elemen: '' }));
+    setFormData(prev => ({ ...prev, elemen: '', topik: '' }));
     setIsManualElemen(false);
+    setIsManualTopik(false);
   }, [formData.mataPelajaran]);
+
+  // Reset topik when elemen changes
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, topik: '' }));
+    setIsManualTopik(false);
+  }, [formData.elemen]);
 
   const handleIdentityChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setIdentity({ ...identity, [e.target.name]: e.target.value });
@@ -238,10 +251,22 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
     const val = e.target.value;
     if (val === "MANUAL_INPUT") {
       setIsManualElemen(true);
-      setFormData({ ...formData, elemen: "" });
+      setFormData({ ...formData, elemen: "", topik: "" });
     } else {
       setIsManualElemen(false);
-      setFormData({ ...formData, elemen: val });
+      setFormData({ ...formData, elemen: val, topik: "" });
+    }
+    setIsManualTopik(false);
+  };
+
+  const handleTopikSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === "MANUAL_INPUT") {
+      setIsManualTopik(true);
+      setFormData({ ...formData, topik: "" });
+    } else {
+      setIsManualTopik(false);
+      setFormData({ ...formData, topik: val });
     }
   };
 
@@ -354,8 +379,30 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
               </div>
 
               <div className={`mt-6 p-5 rounded-xl border ${styles.border} ${styles.bg}`}>
-                <InputWrapper label="Topik / Materi Pokok" icon={Sparkles} tip="Gunakan judul bab dari buku paket untuk hasil terbaik." accentClass={styles.accent}>
-                  <input type="text" name="topik" required value={formData.topik} onChange={handleFormChange} className="w-full px-4 py-3 border border-white/50 rounded-xl text-sm bg-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" placeholder="Contoh: Operasi Hitung Bilangan Bulat" />
+                <InputWrapper label="Topik / Materi Pokok" icon={Sparkles} tip="Pilih sesuai elemen CP atau input manual" accentClass={styles.accent}>
+                  <select
+                    name="topikSelector"
+                    value={isManualTopik ? "MANUAL_INPUT" : (formData.topik || "")}
+                    onChange={handleTopikSelectChange}
+                    disabled={!formData.elemen && !isManualElemen}
+                    className={`w-full px-4 py-3 border border-white/50 rounded-xl text-sm bg-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <option value="">-- Pilih Materi/Topik --</option>
+                    {materiOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                    <option value="MANUAL_INPUT">+ Input Manual</option>
+                  </select>
+                  {isManualTopik && (
+                    <input
+                      type="text"
+                      name="topik"
+                      required
+                      value={formData.topik}
+                      onChange={handleFormChange}
+                      className={`mt-2 w-full px-4 py-2 border rounded-xl text-sm ${styles.border} bg-white focus:ring-2 ${styles.ring}`}
+                      placeholder="Contoh: Operasi Hitung Bilangan Bulat"
+                      autoFocus
+                    />
+                  )}
                 </InputWrapper>
               </div>
             </div>
