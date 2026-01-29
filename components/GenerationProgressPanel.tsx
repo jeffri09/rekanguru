@@ -8,6 +8,8 @@ interface GenerationProgressPanelProps {
     onDownloadCompleted: () => void;
     onClear: () => void;
     isResuming?: boolean;
+    downloadMode: 'combined' | 'separate';
+    onDownloadModeChange: (mode: 'combined' | 'separate') => void;
 }
 
 /**
@@ -19,7 +21,9 @@ const GenerationProgressPanel: React.FC<GenerationProgressPanelProps> = ({
     onResume,
     onDownloadCompleted,
     onClear,
-    isResuming = false
+    isResuming = false,
+    downloadMode,
+    onDownloadModeChange
 }) => {
     const totalDocs = progress.selectedTypes.length;
     const completedCount = progress.completedDocs.length;
@@ -86,7 +90,7 @@ const GenerationProgressPanel: React.FC<GenerationProgressPanelProps> = ({
             <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden mb-4">
                 <div
                     className={`h-full transition-all duration-500 ${progress.status === 'error' ? 'bg-red-500' :
-                            progress.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'
+                        progress.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'
                         }`}
                     style={{ width: `${progressPercent}%` }}
                 />
@@ -102,10 +106,10 @@ const GenerationProgressPanel: React.FC<GenerationProgressPanelProps> = ({
                         <div
                             key={docType}
                             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${isCompleted
-                                    ? 'bg-green-100 text-green-700'
-                                    : isPending
-                                        ? 'bg-slate-100 text-slate-500'
-                                        : 'bg-red-100 text-red-700'
+                                ? 'bg-green-100 text-green-700'
+                                : isPending
+                                    ? 'bg-slate-100 text-slate-500'
+                                    : 'bg-red-100 text-red-700'
                                 }`}
                         >
                             {isCompleted ? (
@@ -149,13 +153,25 @@ const GenerationProgressPanel: React.FC<GenerationProgressPanelProps> = ({
                 )}
 
                 {completedCount > 0 && (
-                    <button
-                        onClick={onDownloadCompleted}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-all"
-                    >
-                        <Download className="w-4 h-4" />
-                        Download {completedCount} Dokumen
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {/* Download Mode Toggle */}
+                        <div className="flex items-center gap-2 bg-white/50 px-3 py-2 rounded-lg border border-slate-200">
+                            <span className="text-xs text-slate-600">Gabung 1 file</span>
+                            <button
+                                onClick={() => onDownloadModeChange(downloadMode === 'combined' ? 'separate' : 'combined')}
+                                className={`relative w-10 h-5 rounded-full transition-colors ${downloadMode === 'combined' ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                            >
+                                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${downloadMode === 'combined' ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                            </button>
+                        </div>
+                        <button
+                            onClick={onDownloadCompleted}
+                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-all"
+                        >
+                            <Download className="w-4 h-4" />
+                            Download {completedCount} Dokumen
+                        </button>
+                    </div>
                 )}
 
                 <button

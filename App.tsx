@@ -67,6 +67,7 @@ const App: React.FC = () => {
     const [loadingStatus, setLoadingStatus] = useState('');
     const [showRateLimitError, setShowRateLimitError] = useState(false);
     const [rateLimitErrorMessage, setRateLimitErrorMessage] = useState('');
+    const [downloadMode, setDownloadMode] = useState<'combined' | 'separate'>('combined');
 
     useEffect(() => {
         try {
@@ -237,19 +238,104 @@ const App: React.FC = () => {
     const handleDownloadCompleted = () => {
         if (!generationProgress || generationProgress.completedDocs.length === 0) return;
 
-        const content = generationProgress.completedDocs
-            .map(d => `# 📄 ${d.docType}\n\n${d.content}`)
-            .join('\n\n---\n\n');
+        const cssStyle = `
+            <style>
+                @page { size: A4; margin: 2.54cm; }
+                body { font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.5; color: #000; }
+                h1, h2, h3 { font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; }
+                h1 { font-size: 14pt; text-align: center; }
+                h2 { font-size: 13pt; border-bottom: 1px solid #000; }
+                h3 { font-size: 12pt; }
+                table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+                th, td { border: 1px solid #000; padding: 6px; }
+                th { background-color: #f0f0f0; font-weight: bold; }
+            </style>
+        `;
 
-        const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `dokumen-parsial-${Date.now()}.md`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        const convertMarkdownToHtml = (content: string) => {
+            return content
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+        };
+
+        const downloadSingleDoc = (docType: string, content: string, index?: number) => {
+            const docHtml = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset="utf-8">
+                    <title>${docType}</title>
+                    ${cssStyle}
+                </head>
+                <body>
+                    <h1 style="text-align: center; font-size: 14pt; font-weight: bold;">${docType}</h1>
+                    <div style="white-space: pre-wrap; font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.5;">
+                        ${convertMarkdownToHtml(content)}
+                    </div>
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob(['\ufeff', docHtml], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const safeTitle = docType.replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '_');
+            link.download = `${safeTitle || 'dokumen'}.doc`;
+            document.body.appendChild(link);
+
+            // Use timeout to stagger downloads for separate mode
+            setTimeout(() => {
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, index ? index * 500 : 0);
+        };
+
+        if (downloadMode === 'separate') {
+            // Download each document separately
+            generationProgress.completedDocs.forEach((doc, index) => {
+                downloadSingleDoc(doc.docType, doc.content, index);
+            });
+        } else {
+            // Combined mode: all docs in one file
+            const documentsHtml = generationProgress.completedDocs
+                .map(d => `
+                    <div style="page-break-after: always;">
+                        <h1 style="text-align: center; font-size: 14pt; font-weight: bold;">${d.docType}</h1>
+                        <div style="white-space: pre-wrap; font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.5;">
+                            ${convertMarkdownToHtml(d.content)}
+                        </div>
+                    </div>
+                `)
+                .join('');
+
+            const fullHtml = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset="utf-8">
+                    <title>Dokumen Administrasi</title>
+                    ${cssStyle}
+                </head>
+                <body>
+                    ${documentsHtml}
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `dokumen-lengkap-${Date.now()}.doc`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
     };
 
     const handleQuizSubmit = async (data: QuizRequest) => {
@@ -390,6 +476,8 @@ const App: React.FC = () => {
                                 onDownloadCompleted={handleDownloadCompleted}
                                 onClear={clearProgress}
                                 isResuming={isProcessing}
+                                downloadMode={downloadMode}
+                                onDownloadModeChange={setDownloadMode}
                             />
                         )}
 
