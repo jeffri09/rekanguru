@@ -84,20 +84,23 @@ interface GeminiError extends Error {
 const getErrorMessage = (error: GeminiError): string => {
   const status = error.status || 0;
   const code = error.code || '';
-  const message = error.message || '';
+  const message = (error.message || '').toLowerCase();
+
+  // Debug: Log the actual error for troubleshooting
+  console.error('[Gemini Error Debug]', { status, code, message: error.message });
 
   // Rate Limit Errors
-  if (status === 429 || code === 'RATE_LIMIT_EXCEEDED' || message.includes('quota')) {
+  if (status === 429 || code === 'RATE_LIMIT_EXCEEDED' || message.includes('quota') || message.includes('rate limit')) {
     return '⏳ Batas penggunaan AI tercapai (Rate Limit/Quota). Solusi: Buat API Key BARU di aistudio.google.com/app/apikey lalu masukkan di Pengaturan API.';
   }
 
   // API Key Errors
-  if (status === 401 || status === 403 || message.includes('API key')) {
+  if (status === 401 || status === 403 || message.includes('api key') || message.includes('api_key') || message.includes('invalid key')) {
     return '🔑 API Key tidak valid atau belum diatur. Periksa kembali konfigurasi API Key Anda.';
   }
 
   // Network Errors
-  if (message.includes('network') || message.includes('fetch') || message.includes('ECONNREFUSED')) {
+  if (message.includes('network') || message.includes('fetch') || message.includes('econnrefused') || message.includes('timeout')) {
     return '🌐 Koneksi internet terputus. Periksa koneksi Anda dan coba lagi.';
   }
 
@@ -106,8 +109,8 @@ const getErrorMessage = (error: GeminiError): string => {
     return '⚠️ Konten tidak dapat diproses karena filter keamanan. Coba ubah input Anda.';
   }
 
-  // Model Not Found
-  if (status === 404 || message.includes('model')) {
+  // Model Not Found - More specific check
+  if (status === 404 || message.includes('model not found') || message.includes('models/') || code === 'NOT_FOUND') {
     return '❌ Model AI tidak tersedia. Mohon hubungi pengembang aplikasi.';
   }
 
@@ -116,8 +119,8 @@ const getErrorMessage = (error: GeminiError): string => {
     return '🔧 Server Gemini sedang sibuk. Silakan coba lagi dalam beberapa saat.';
   }
 
-  // Default
-  return `❌ Terjadi kesalahan: ${message || 'Gagal menghubungi AI'}. Silakan coba lagi.`;
+  // Default - show original message for debugging
+  return `❌ Terjadi kesalahan: ${error.message || 'Gagal menghubungi AI'}. Silakan coba lagi.`;
 };
 
 // Delay utility for retry
