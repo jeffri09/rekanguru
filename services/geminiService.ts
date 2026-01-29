@@ -35,7 +35,7 @@ const ROTATION_INTERVAL = 6000; // 6 detik
 
 // State untuk delay antar request (mencegah rate limit)
 let lastRequestTime = 0;
-const REQUEST_DELAY = 10000; // 10 detik delay antar request
+const REQUEST_DELAY = 15000; // 15 detik delay antar request (5 RPM limit = 12s minimum)
 
 const getActiveGenAI = (): GoogleGenAI => {
   // Cek Custom API Key dari LocalStorage (jika ada)
