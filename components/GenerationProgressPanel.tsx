@@ -154,14 +154,25 @@ const GenerationProgressPanel: React.FC<GenerationProgressPanelProps> = ({
 
                 {completedCount > 0 && (
                     <div className="flex items-center gap-3">
-                        {/* Download Mode Toggle */}
-                        <div className="flex items-center gap-2 bg-white/50 px-3 py-2 rounded-lg border border-slate-200">
-                            <span className="text-xs text-slate-600">Gabung 1 file</span>
+                        {/* Download Mode Toggle - Improved UI */}
+                        <div className="flex items-center bg-white rounded-xl border border-slate-200 p-1">
                             <button
-                                onClick={() => onDownloadModeChange(downloadMode === 'combined' ? 'separate' : 'combined')}
-                                className={`relative w-10 h-5 rounded-full transition-colors ${downloadMode === 'combined' ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                onClick={() => onDownloadModeChange('combined')}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${downloadMode === 'combined'
+                                        ? 'bg-emerald-500 text-white shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                    }`}
                             >
-                                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${downloadMode === 'combined' ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                                📦 Gabung
+                            </button>
+                            <button
+                                onClick={() => onDownloadModeChange('separate')}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${downloadMode === 'separate'
+                                        ? 'bg-indigo-500 text-white shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                            >
+                                📄 Pisah
                             </button>
                         </div>
                         <button
