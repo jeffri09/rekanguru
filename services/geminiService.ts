@@ -35,7 +35,7 @@ const ROTATION_INTERVAL = 6000; // 6 detik
 
 // State untuk delay antar request (mencegah rate limit)
 let lastRequestTime = 0;
-const REQUEST_DELAY = 10000; // 10 detik delay antar request
+const REQUEST_DELAY = 5000; // 5 detik delay antar request
 
 const getActiveGenAI = (): GoogleGenAI => {
   // Cek Custom API Key dari LocalStorage (jika ada)
@@ -43,7 +43,7 @@ const getActiveGenAI = (): GoogleGenAI => {
     const customKey = localStorage.getItem('custom_gemini_api_key');
     if (customKey && customKey.trim().length > 10) {
       console.log(`[API Custom] Using User-Provided API Key`);
-      return new GoogleGenAI({ apiKey: customKey, apiVersion: 'v1beta' });
+      return new GoogleGenAI({ apiKey: customKey });
     }
   }
 
@@ -60,7 +60,7 @@ const getActiveGenAI = (): GoogleGenAI => {
     console.log(`[API Rotation] Rotating to key index: ${currentKeyIndex}`);
   }
 
-  return new GoogleGenAI({ apiKey: API_KEYS[currentKeyIndex], apiVersion: 'v1beta' });
+  return new GoogleGenAI({ apiKey: API_KEYS[currentKeyIndex] });
 };
 
 // Fungsi untuk memaksa rotasi jika kena error (misal Rate Limit)
@@ -155,18 +155,11 @@ const withRetry = async <T>(
         rotateKeyImmediately();
       }
 
-      console.error(`[Gemini Error] Attempt ${attempt + 1} failed:`, {
-        message: error.message,
-        status: error.status,
-        code: error.code,
-        stack: error.stack,
-        details: error
-      });
-
       if (attempt === maxRetries || !isRetryable) {
         // Throw user-friendly error
         const userMessage = getErrorMessage(error);
-        throw new Error(userMessage); // Simplify throwing to keep stack trace clean if needed
+        const enhancedError = new Error(userMessage);
+        throw enhancedError;
       }
 
       // Wait before retry (exponential backoff)
@@ -408,20 +401,28 @@ PENTING - JANGAN BUAT BAGIAN TANDA TANGAN:
 
     // Get fresh AI instance (might be rotated)
     const aiInstance = getAi();
-    const result = await aiInstance.models.generateContent({
+    const result = await aiInstance.models.generateContentStream({
       model: "gemini-3-flash-preview",
       contents: [{ role: "user", parts: [{ text: prompt }] }]
     });
 
+    let fullText = "";
+    for await (const chunk of result) {
+      if (chunk.text) {
+        fullText += chunk.text;
+        if (onProgress) onProgress(estimateProgress(fullText.length));
+      }
+    }
+
     if (onProgress) onProgress(100);
-    return result.text || "";
+    return fullText;
   });
 };
 
 export const testConnection = async (apiKey?: string): Promise<boolean> => {
   try {
     const aiToTest = apiKey
-      ? new GoogleGenAI({ apiKey, apiVersion: 'v1beta' })
+      ? new GoogleGenAI({ apiKey })
       : getAi(); // Use default rotation or existing custom key logic
 
     await aiToTest.models.generateContent({
