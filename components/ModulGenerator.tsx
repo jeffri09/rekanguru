@@ -16,6 +16,8 @@ interface ModulGeneratorProps {
   isLoading: boolean;
   loadingStatus?: string;
   onOpenSettings?: () => void;
+  downloadMode: 'combined' | 'separate';
+  onDownloadModeChange: (mode: 'combined' | 'separate') => void;
 }
 
 // Colors helper based on category
@@ -91,7 +93,7 @@ const InputWrapper = ({ label, icon: Icon, children, tip, accentClass }: any) =>
   </div>
 );
 
-const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isLoading, loadingStatus, onOpenSettings }) => {
+const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isLoading, loadingStatus, onOpenSettings, downloadMode, onDownloadModeChange }) => {
   const styles = getCategoryStyles(category);
   const { hasApiKey, refreshApiKey } = useApiKey();
 
@@ -733,6 +735,42 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Download Mode Toggle - Only show for Administrasi with multiple docs */}
+        {category === AppCategory.Administrasi && selectedDocs.length > 1 && (
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm mb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                  <Box className="w-4 h-4 text-indigo-600" /> Format Download
+                </h4>
+                <p className="text-xs text-slate-500 mt-1">Pilih cara download setelah dokumen selesai dibuat</p>
+              </div>
+              <div className="flex items-center bg-slate-100 rounded-xl p-1">
+                <button
+                  type="button"
+                  onClick={() => onDownloadModeChange('combined')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${downloadMode === 'combined'
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                  📦 Gabung (1 File)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDownloadModeChange('separate')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${downloadMode === 'separate'
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                  📄 Pisah ({selectedDocs.length} File)
+                </button>
               </div>
             </div>
           </div>

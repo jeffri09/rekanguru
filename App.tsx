@@ -503,7 +503,7 @@ const App: React.FC = () => {
                             activeCategory === AppCategory.Kuis ? (
                                 <QuizGenerator onSubmit={handleQuizSubmit} isLoading={isProcessing} onOpenSettings={() => setIsSettingsOpen(true)} />
                             ) : (
-                                <ModulGenerator category={activeCategory} onSubmit={handleAdminSubmit} isLoading={isProcessing} loadingStatus={loadingStatus} onOpenSettings={() => setIsSettingsOpen(true)} />
+                                <ModulGenerator category={activeCategory} onSubmit={handleAdminSubmit} isLoading={isProcessing} loadingStatus={loadingStatus} onOpenSettings={() => setIsSettingsOpen(true)} downloadMode={downloadMode} onDownloadModeChange={setDownloadMode} />
                             )
                         ) : (
                             activeDoc && (
