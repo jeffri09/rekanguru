@@ -151,6 +151,11 @@ const App: React.FC = () => {
                     currentProgress.pendingTypes = currentProgress.pendingTypes.filter(t => t !== docType);
                     saveProgress(currentProgress);
 
+                    // Auto-download immediately if mode is 'separate'
+                    if (downloadMode === 'separate') {
+                        downloadSingleDocWord(docType, content);
+                    }
+
                     // Add to contents
                     if (totalDocs > 1) {
                         allContents.push(`\n\n---\n\n# 📄 ${docType}\n\n${content}`);
@@ -232,6 +237,60 @@ const App: React.FC = () => {
             generationProgress.selectedTypes,
             generationProgress
         );
+    };
+
+    // Helper function to download a single document as Word
+    const downloadSingleDocWord = (docType: string, content: string) => {
+        const cssStyle = `
+            <style>
+                @page { size: A4; margin: 2.54cm; }
+                body { font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.5; color: #000; }
+                h1, h2, h3 { font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; }
+                h1 { font-size: 14pt; text-align: center; }
+                h2 { font-size: 13pt; border-bottom: 1px solid #000; }
+                h3 { font-size: 12pt; }
+                table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+                th, td { border: 1px solid #000; padding: 6px; }
+                th { background-color: #f0f0f0; font-weight: bold; }
+            </style>
+        `;
+
+        const convertMarkdownToHtml = (text: string) => {
+            return text
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+        };
+
+        const docHtml = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head>
+                <meta charset="utf-8">
+                <title>${docType}</title>
+                ${cssStyle}
+            </head>
+            <body>
+                <h1 style="text-align: center; font-size: 14pt; font-weight: bold;">${docType}</h1>
+                <div style="white-space: pre-wrap; font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.5;">
+                    ${convertMarkdownToHtml(content)}
+                </div>
+            </body>
+            </html>
+        `;
+
+        const blob = new Blob(['\ufeff', docHtml], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const safeTitle = docType.replace(/[^a-zA-Z0-9\s-]/g, '').trim().replace(/\s+/g, '_');
+        link.download = `${safeTitle || 'dokumen'}.doc`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     // Download completed documents from progress
