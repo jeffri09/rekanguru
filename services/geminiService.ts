@@ -43,7 +43,7 @@ const getActiveGenAI = (): GoogleGenAI => {
     const customKey = localStorage.getItem('custom_gemini_api_key');
     if (customKey && customKey.trim().length > 10) {
       console.log(`[API Custom] Using User-Provided API Key`);
-      return new GoogleGenAI({ apiKey: customKey, apiVersion: 'v1beta' });
+      return new GoogleGenAI({ apiKey: customKey });
     }
   }
 
@@ -60,7 +60,7 @@ const getActiveGenAI = (): GoogleGenAI => {
     console.log(`[API Rotation] Rotating to key index: ${currentKeyIndex}`);
   }
 
-  return new GoogleGenAI({ apiKey: API_KEYS[currentKeyIndex], apiVersion: 'v1beta' });
+  return new GoogleGenAI({ apiKey: API_KEYS[currentKeyIndex] });
 };
 
 // Fungsi untuk memaksa rotasi jika kena error (misal Rate Limit)
@@ -421,12 +421,12 @@ PENTING - JANGAN BUAT BAGIAN TANDA TANGAN:
 export const testConnection = async (apiKey?: string): Promise<boolean> => {
   try {
     const aiToTest = apiKey
-      ? new GoogleGenAI({ apiKey, apiVersion: 'v1beta' })
+      ? new GoogleGenAI({ apiKey })
       : getAi(); // Use default rotation or existing custom key logic
 
     await aiToTest.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: [{ role: "user", parts: [{ text: "Test" }] }]
+      contents: "Test"
     });
     return true;
   } catch (e) {
