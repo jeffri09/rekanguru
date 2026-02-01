@@ -5,6 +5,7 @@
 
 import { AdminRequest, AdminDocType, TeacherIdentity } from '../types';
 import { PROFIL_PELAJAR_PANCASILA, RUBRIK_STANDAR, getSpecificCP } from '../data/cpDatabase';
+import { getSoalByMapelTopik, getMateriByMapelTopik, getKegiatanByMapelTopik, formatSoalPG, formatKunciPG, formatSoalUraian, formatKunciUraian } from '../data/contentBank';
 
 // ======================== INTERFACE ========================
 export interface TemplateData {
@@ -609,6 +610,8 @@ ${formatTandaTangan(data.identity)}`;
 }
 
 export function generateAsesmenSumatif(data: TemplateData): string {
+    const soalData = getSoalByMapelTopik(data.mapel, data.topik);
+
     return `# ASESMEN SUMATIF
 
 ## INFORMASI UMUM
@@ -620,49 +623,45 @@ export function generateAsesmenSumatif(data: TemplateData): string {
 | Mata Pelajaran | ${data.mapel} |
 | Topik | ${data.topik} |
 | Alokasi Waktu | ${data.waktu} |
+| Jumlah Soal | 10 PG + 3 Uraian |
 
 ---
 
-## A. SOAL PILIHAN GANDA
+## A. PETUNJUK PENGERJAAN
 
-${data.soalAsesmen || `1. Pertanyaan tentang ${data.topik}...
-   a. Pilihan A
-   b. Pilihan B
-   c. Pilihan C
-   d. Pilihan D
-
-2. Pertanyaan kedua...
-   a. Pilihan A
-   b. Pilihan B
-   c. Pilihan C
-   d. Pilihan D`}
+1. Berdoalah sebelum mengerjakan soal
+2. Isikan identitas pada lembar jawaban
+3. Periksa kelengkapan soal sebelum mengerjakan
+4. Kerjakan soal yang dianggap mudah terlebih dahulu
+5. Periksa kembali jawaban sebelum dikumpulkan
 
 ---
 
-## B. SOAL URAIAN
+## B. SOAL PILIHAN GANDA (10 Soal × 5 = 50 Poin)
 
-1. Jelaskan pengertian ${data.topik}! (Skor: 20)
-
-2. Sebutkan dan jelaskan 3 contoh ${data.topik} dalam kehidupan sehari-hari! (Skor: 30)
-
-3. Analisislah hubungan antara ${data.topik} dengan ${data.elemen}! (Skor: 25)
+${formatSoalPG(soalData.pg, 10)}
 
 ---
 
-## C. KUNCI JAWABAN
+## C. SOAL URAIAN (3 Soal × 50/3 = 50 Poin)
 
-### Pilihan Ganda
-${data.kunciJawaban || `1. C
-2. B`}
-
-### Uraian
-${data.kunciJawaban || `1. (Kunci jawaban soal 1)
-2. (Kunci jawaban soal 2)
-3. (Kunci jawaban soal 3)`}
+${formatSoalUraian(soalData.uraian.slice(0, 3))}
 
 ---
 
-## D. RUBRIK PENILAIAN URAIAN
+## D. KUNCI JAWABAN PILIHAN GANDA
+
+${formatKunciPG(soalData.pg, 10)}
+
+---
+
+## E. KUNCI JAWABAN URAIAN
+
+${formatKunciUraian(soalData.uraian.slice(0, 3))}
+
+---
+
+## F. RUBRIK PENILAIAN
 
 ${formatRubrik()}
 
@@ -710,70 +709,44 @@ ${formatTandaTangan(data.identity)}`;
 }
 
 export function generateBankSoal(data: TemplateData): string {
+    const soalData = getSoalByMapelTopik(data.mapel, data.topik);
+
     return `# BANK SOAL DAN KUNCI JAWABAN
 
 ## INFORMASI UMUM
 
 | Aspek | Keterangan |
 |-------|------------|
+| Satuan Pendidikan | ${data.identity.sekolah} |
 | Fase / Kelas | ${data.fase} |
 | Mata Pelajaran | ${data.mapel} |
 | Topik | ${data.topik} |
+| Jumlah Soal PG | ${soalData.pg.length} soal |
+| Jumlah Soal Uraian | ${soalData.uraian.length} soal |
 
 ---
 
-## A. SOAL PILIHAN GANDA
+## A. SOAL PILIHAN GANDA (${soalData.pg.length} Soal)
 
-${data.soalAsesmen || `1. Pengertian ${data.topik} adalah...
-   a. Pilihan A
-   b. Pilihan B
-   c. Pilihan C ✓
-   d. Pilihan D
-
-2. Contoh ${data.topik} dalam kehidupan sehari-hari adalah...
-   a. Contoh A
-   b. Contoh B ✓
-   c. Contoh C
-   d. Contoh D
-
-3. Manfaat mempelajari ${data.topik} adalah...
-   a. Manfaat A
-   b. Manfaat B
-   c. Manfaat C
-   d. Manfaat D ✓`}
+${formatSoalPG(soalData.pg, 20)}
 
 ---
 
-## B. SOAL URAIAN
+## B. SOAL URAIAN (${soalData.uraian.length} Soal)
 
-1. **C2 - Memahami**
-   Jelaskan pengertian ${data.topik} dengan kata-katamu sendiri!
-
-2. **C3 - Menerapkan**
-   Berikan 2 contoh penerapan ${data.topik} dalam kehidupan sehari-hari!
-
-3. **C4 - Menganalisis**
-   Analisislah perbedaan antara... (sesuaikan dengan materi)
-
-4. **C5 - Mengevaluasi**
-   Berikan pendapatmu tentang pentingnya ${data.topik}!
+${formatSoalUraian(soalData.uraian)}
 
 ---
 
-## C. KUNCI JAWABAN
+## C. KUNCI JAWABAN PILIHAN GANDA
 
-### Pilihan Ganda
-${data.kunciJawaban || `| No | Jawaban | Pembahasan |
-|----|---------|------------|
-| 1 | C | (Pembahasan) |
-| 2 | B | (Pembahasan) |
-| 3 | D | (Pembahasan) |`}
+${formatKunciPG(soalData.pg, 20)}
 
-### Uraian
-${data.kunciJawaban || `1. (Kunci jawaban nomor 1)
-2. (Kunci jawaban nomor 2)
-3. (Kunci jawaban nomor 3)
-4. (Kunci jawaban nomor 4)`}
+---
+
+## D. KUNCI JAWABAN URAIAN
+
+${formatKunciUraian(soalData.uraian)}
 
 ${formatTandaTangan(data.identity)}`;
 }
