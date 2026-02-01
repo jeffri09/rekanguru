@@ -7,7 +7,7 @@ interface ResultsPageProps {
     onViewDocument: (doc: GeneratedDocument) => void;
     onDeleteDocument: (id: string) => void;
     onDeleteAll: () => void;
-    onBack: () => void;
+    onNavigate: (page: any) => void;
 }
 
 const ResultsPage: React.FC<ResultsPageProps> = ({
@@ -15,7 +15,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({
     onViewDocument,
     onDeleteDocument,
     onDeleteAll,
-    onBack
+    onNavigate
 }) => {
     const formatDate = (timestamp: number) => {
         const date = new Date(timestamp);
@@ -35,7 +35,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({
                 <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <button
-                            onClick={onBack}
+                            onClick={() => onNavigate('home')}
                             className="text-indigo-600 font-medium hover:text-indigo-700 mb-2 flex items-center gap-2"
                         >
                             ← Kembali ke Beranda
@@ -68,7 +68,7 @@ const ResultsPage: React.FC<ResultsPageProps> = ({
                         <h2 className="text-xl font-bold text-slate-900 mb-2">Belum Ada Dokumen</h2>
                         <p className="text-slate-600 mb-6">Dokumen yang Anda buat akan muncul di sini</p>
                         <button
-                            onClick={onBack}
+                            onClick={() => onNavigate('generator')}
                             className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold rounded-xl hover:shadow-lg transition-all"
                         >
                             Mulai Buat Dokumen
