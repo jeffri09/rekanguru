@@ -117,52 +117,134 @@ export const MATEMATIKA_BILANGAN: {
 
 // ============ HELPER FUNCTION ============
 import { BAHASA_INDONESIA_TEKS, IPA_PENCERNAAN } from './contentBankExtended';
+import { MATEMATIKA_FASE_A, MATEMATIKA_FASE_B, MATEMATIKA_FASE_C } from './matFaseABC';
+import { MATEMATIKA_FASE_D, MATEMATIKA_FASE_E, MATEMATIKA_FASE_F } from './matFaseDEF';
+import { BAHASA_INDONESIA_FASE_A, BAHASA_INDONESIA_FASE_B, BAHASA_INDONESIA_FASE_C } from './bindoFaseABC';
+import { BAHASA_INDONESIA_FASE_D, BAHASA_INDONESIA_FASE_E, BAHASA_INDONESIA_FASE_F } from './bindoFaseDEF';
 
-export function getSoalByMapelTopik(mapel: string, topik: string): { pg: SoalBank[]; uraian: SoalUraian[] } {
+// Helper to detect fase from string
+function detectFase(faseStr: string): string {
+    const f = faseStr.toUpperCase();
+    if (f.includes('FONDASI') || f.includes('TK') || f.includes('PAUD')) return 'A';
+    if (f.includes('A') || f.includes('1') || f.includes('2')) return 'A';
+    if (f.includes('B') || f.includes('3') || f.includes('4')) return 'B';
+    if (f.includes('C') || f.includes('5') || f.includes('6')) return 'C';
+    if (f.includes('D') || f.includes('7') || f.includes('8') || f.includes('9') || f.includes('SMP')) return 'D';
+    if (f.includes('E') || f.includes('10') || f.includes('X')) return 'E';
+    if (f.includes('F') || f.includes('11') || f.includes('12') || f.includes('XI') || f.includes('XII')) return 'F';
+    return 'D'; // Default to SMP level
+}
+
+export function getSoalByMapelTopikFase(mapel: string, topik: string, fase: string = ''): { pg: SoalBank[]; uraian: SoalUraian[] } {
     const m = mapel.toLowerCase();
-    const t = topik.toLowerCase();
+    const f = detectFase(fase);
 
+    // MATEMATIKA - based on Fase
     if (m.includes('matematika')) {
-        return { pg: MATEMATIKA_BILANGAN.pg, uraian: MATEMATIKA_BILANGAN.uraian };
+        switch (f) {
+            case 'A': return { pg: MATEMATIKA_FASE_A.pg, uraian: MATEMATIKA_FASE_A.uraian };
+            case 'B': return { pg: MATEMATIKA_FASE_B.pg, uraian: MATEMATIKA_FASE_B.uraian };
+            case 'C': return { pg: MATEMATIKA_FASE_C.pg, uraian: MATEMATIKA_FASE_C.uraian };
+            case 'D': return { pg: MATEMATIKA_FASE_D.pg, uraian: MATEMATIKA_FASE_D.uraian };
+            case 'E': return { pg: MATEMATIKA_FASE_E.pg, uraian: MATEMATIKA_FASE_E.uraian };
+            case 'F': return { pg: MATEMATIKA_FASE_F.pg, uraian: MATEMATIKA_FASE_F.uraian };
+            default: return { pg: MATEMATIKA_BILANGAN.pg, uraian: MATEMATIKA_BILANGAN.uraian };
+        }
     }
-    if (m.includes('bahasa indonesia') || m.includes('b. indonesia')) {
-        return { pg: BAHASA_INDONESIA_TEKS.pg, uraian: BAHASA_INDONESIA_TEKS.uraian };
+
+    // BAHASA INDONESIA - based on Fase
+    if (m.includes('bahasa indonesia') || m.includes('b. indonesia') || m.includes('b.indonesia')) {
+        switch (f) {
+            case 'A': return { pg: BAHASA_INDONESIA_FASE_A.pg, uraian: BAHASA_INDONESIA_FASE_A.uraian };
+            case 'B': return { pg: BAHASA_INDONESIA_FASE_B.pg, uraian: BAHASA_INDONESIA_FASE_B.uraian };
+            case 'C': return { pg: BAHASA_INDONESIA_FASE_C.pg, uraian: BAHASA_INDONESIA_FASE_C.uraian };
+            case 'D': return { pg: BAHASA_INDONESIA_FASE_D.pg, uraian: BAHASA_INDONESIA_FASE_D.uraian };
+            case 'E': return { pg: BAHASA_INDONESIA_FASE_E.pg, uraian: BAHASA_INDONESIA_FASE_E.uraian };
+            case 'F': return { pg: BAHASA_INDONESIA_FASE_F.pg, uraian: BAHASA_INDONESIA_FASE_F.uraian };
+            default: return { pg: BAHASA_INDONESIA_TEKS.pg, uraian: BAHASA_INDONESIA_TEKS.uraian };
+        }
     }
-    if (m.includes('ipa') || m.includes('ilmu pengetahuan alam') || t.includes('pencernaan') || t.includes('sistem')) {
+
+    // IPA
+    if (m.includes('ipa') || m.includes('ilmu pengetahuan alam')) {
         return { pg: IPA_PENCERNAAN.pg, uraian: IPA_PENCERNAAN.uraian };
     }
+
     // Default
     return { pg: MATEMATIKA_BILANGAN.pg, uraian: MATEMATIKA_BILANGAN.uraian };
 }
 
-export function getMateriByMapelTopik(mapel: string, topik: string): MateriKonten {
+// Backward compatible version
+export function getSoalByMapelTopik(mapel: string, topik: string): { pg: SoalBank[]; uraian: SoalUraian[] } {
+    return getSoalByMapelTopikFase(mapel, topik, '');
+}
+
+export function getMateriByMapelTopikFase(mapel: string, topik: string, fase: string = ''): MateriKonten {
     const m = mapel.toLowerCase();
+    const f = detectFase(fase);
 
     if (m.includes('matematika')) {
-        return MATEMATIKA_BILANGAN.materi;
+        switch (f) {
+            case 'A': return MATEMATIKA_FASE_A.materi;
+            case 'B': return MATEMATIKA_FASE_B.materi;
+            case 'C': return MATEMATIKA_FASE_C.materi;
+            case 'D': return MATEMATIKA_FASE_D.materi;
+            case 'E': return MATEMATIKA_FASE_E.materi;
+            case 'F': return MATEMATIKA_FASE_F.materi;
+            default: return MATEMATIKA_BILANGAN.materi;
+        }
     }
     if (m.includes('bahasa indonesia') || m.includes('b. indonesia')) {
-        return BAHASA_INDONESIA_TEKS.materi;
+        switch (f) {
+            case 'A': return BAHASA_INDONESIA_FASE_A.materi;
+            case 'B': return BAHASA_INDONESIA_FASE_B.materi;
+            case 'C': return BAHASA_INDONESIA_FASE_C.materi;
+            case 'D': return BAHASA_INDONESIA_FASE_D.materi;
+            case 'E': return BAHASA_INDONESIA_FASE_E.materi;
+            case 'F': return BAHASA_INDONESIA_FASE_F.materi;
+            default: return BAHASA_INDONESIA_TEKS.materi;
+        }
     }
-    if (m.includes('ipa') || m.includes('ilmu pengetahuan alam')) {
-        return IPA_PENCERNAAN.materi;
-    }
+    if (m.includes('ipa')) return IPA_PENCERNAAN.materi;
     return MATEMATIKA_BILANGAN.materi;
 }
 
-export function getKegiatanByMapelTopik(mapel: string, topik: string): KegiatanPembelajaran {
+export function getMateriByMapelTopik(mapel: string, topik: string): MateriKonten {
+    return getMateriByMapelTopikFase(mapel, topik, '');
+}
+
+export function getKegiatanByMapelTopikFase(mapel: string, topik: string, fase: string = ''): KegiatanPembelajaran {
     const m = mapel.toLowerCase();
+    const f = detectFase(fase);
 
     if (m.includes('matematika')) {
-        return MATEMATIKA_BILANGAN.kegiatan;
+        switch (f) {
+            case 'A': return MATEMATIKA_FASE_A.kegiatan;
+            case 'B': return MATEMATIKA_FASE_B.kegiatan;
+            case 'C': return MATEMATIKA_FASE_C.kegiatan;
+            case 'D': return MATEMATIKA_FASE_D.kegiatan;
+            case 'E': return MATEMATIKA_FASE_E.kegiatan;
+            case 'F': return MATEMATIKA_FASE_F.kegiatan;
+            default: return MATEMATIKA_BILANGAN.kegiatan;
+        }
     }
     if (m.includes('bahasa indonesia') || m.includes('b. indonesia')) {
-        return BAHASA_INDONESIA_TEKS.kegiatan;
+        switch (f) {
+            case 'A': return BAHASA_INDONESIA_FASE_A.kegiatan;
+            case 'B': return BAHASA_INDONESIA_FASE_B.kegiatan;
+            case 'C': return BAHASA_INDONESIA_FASE_C.kegiatan;
+            case 'D': return BAHASA_INDONESIA_FASE_D.kegiatan;
+            case 'E': return BAHASA_INDONESIA_FASE_E.kegiatan;
+            case 'F': return BAHASA_INDONESIA_FASE_F.kegiatan;
+            default: return BAHASA_INDONESIA_TEKS.kegiatan;
+        }
     }
-    if (m.includes('ipa') || m.includes('ilmu pengetahuan alam')) {
-        return IPA_PENCERNAAN.kegiatan;
-    }
+    if (m.includes('ipa')) return IPA_PENCERNAAN.kegiatan;
     return MATEMATIKA_BILANGAN.kegiatan;
+}
+
+export function getKegiatanByMapelTopik(mapel: string, topik: string): KegiatanPembelajaran {
+    return getKegiatanByMapelTopikFase(mapel, topik, '');
 }
 
 // Format soal PG untuk output
