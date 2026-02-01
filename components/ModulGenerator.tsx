@@ -755,8 +755,8 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
                   type="button"
                   onClick={() => onDownloadModeChange('combined')}
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${downloadMode === 'combined'
-                      ? 'bg-white text-indigo-700 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-white text-indigo-700 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
                     }`}
                 >
                   📦 Gabung (1 File)
@@ -765,8 +765,8 @@ const ModulGenerator: React.FC<ModulGeneratorProps> = ({ category, onSubmit, isL
                   type="button"
                   onClick={() => onDownloadModeChange('separate')}
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${downloadMode === 'separate'
-                      ? 'bg-white text-indigo-700 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-white text-indigo-700 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
                     }`}
                 >
                   📄 Pisah ({selectedDocs.length} File)
