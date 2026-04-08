@@ -1,0 +1,20 @@
+{
+  "name": "perangkat-guru-ai",
+  "private": true,
+  "version": "2.0.0",
+  "description": "Perangkat Guru AI — Pembuat Administrasi & Media Pembelajaran dengan AI",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "docx": "^9.1.1",
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5"
+  },
+  "devDependencies": {
+    "vite": "^6.2.0"
+  }
+}
