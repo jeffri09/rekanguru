@@ -186,13 +186,9 @@ export default {
       }
     }
 
-    // Check API settings
+    // Check API settings — Gemini uses server proxy if no user key
     const settings = state.get('settings');
     const provider = settings.apiProvider;
-    if (provider === 'gemini' && !settings.geminiKey.trim()) {
-      showToast('Gemini API Key belum diisi. Klik ⚙️ di header untuk mengatur.', 'warning');
-      return false;
-    }
     if (provider === 'qwen' && !settings.qwenKey.trim()) {
       showToast('Qwen API Key belum diisi. Klik ⚙️ di header untuk mengatur.', 'warning');
       return false;

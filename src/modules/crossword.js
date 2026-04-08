@@ -245,13 +245,7 @@ async function handleGenerate() {
   const clueLang = document.getElementById('cw-clue-lang')?.value || 'id';
   const answerLang = document.getElementById('cw-answer-lang')?.value || 'id';
 
-  // Check API key
-  const settings = state.get('settings');
-  const provider = settings.apiProvider;
-  if (provider === 'gemini' && !settings.geminiKey.trim()) {
-    showToast('Gemini API Key belum diisi. Klik ⚙️ di header.', 'warning');
-    return;
-  }
+  // API key check removed — server proxy will be used if no user key is set
 
   const btn = document.getElementById('btn-cw-generate');
   btn.disabled = true;
