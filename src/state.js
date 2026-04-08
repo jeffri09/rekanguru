@@ -34,8 +34,8 @@ const initialState = {
   // Settings
   settings: {
     apiProvider: 'gemini',
-    geminiKey: 'AIzaSyAKSMzQqVgEKlNW-WCMZQ4ksgJH68zsvLY',
-    qwenKey: 'sk-a80399de5e1e4ce68c15616fba9f3eb2',
+    geminiKey: '',  // Isi di ⚙️ Settings — jangan hardcode di sini!
+    qwenKey: '',    // Isi di ⚙️ Settings
     geminiModel: 'gemini-3.1-flash-lite-preview',
     qwenModel: 'qvq-max-2025-03-25',
   },
