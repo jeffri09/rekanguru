@@ -17,6 +17,9 @@ import exportModule from './modules/export.js';
 // Import crossword module
 import { renderCrosswordPage, initCrosswordPage } from './modules/crossword.js';
 
+// Import sumatif module
+import { renderSumatifPage, initSumatifPage } from './modules/sumatif.js';
+
 // ====== INITIALIZATION ======
 function init() {
   setupHeaderButtons();
@@ -67,6 +70,12 @@ function renderView() {
     projectName.textContent = 'Teka-Teki Silang';
     mainContent.innerHTML = renderCrosswordPage();
     initCrosswordPage();
+  } else if (view === 'sumatif') {
+    wizardProgress.style.display = 'none';
+    wizardNav.style.display = 'none';
+    projectName.textContent = 'Soal Sumatif';
+    mainContent.innerHTML = renderSumatifPage();
+    initSumatifPage();
   }
 }
 
@@ -109,6 +118,22 @@ function renderDashboard() {
           </div>
           <div class="dashboard-card-arrow">→</div>
         </button>
+
+        <button class="dashboard-card" id="btn-go-sumatif">
+          <div class="dashboard-card-icon">📝</div>
+          <div class="dashboard-card-content">
+            <h3 class="dashboard-card-title">Pembuatan Soal Sumatif</h3>
+            <p class="dashboard-card-desc">Generate soal ujian sumatif lengkap dengan AI. Pilih jenis soal, atur kesulitan, dan download sebagai file Word (.docx) dengan kunci jawaban.</p>
+            <div class="dashboard-card-tags">
+              <span class="tag">Pilihan Ganda</span>
+              <span class="tag">Isian Singkat</span>
+              <span class="tag">Esai</span>
+              <span class="tag">Mencocokkan</span>
+              <span class="tag">Output .docx</span>
+            </div>
+          </div>
+          <div class="dashboard-card-arrow">→</div>
+        </button>
       </div>
     </div>
   `;
@@ -124,6 +149,11 @@ function initDashboard() {
 
   document.getElementById('btn-go-crossword')?.addEventListener('click', () => {
     state.set('currentView', 'crossword');
+    window.dispatchEvent(new Event('viewchange'));
+  });
+
+  document.getElementById('btn-go-sumatif')?.addEventListener('click', () => {
+    state.set('currentView', 'sumatif');
     window.dispatchEvent(new Event('viewchange'));
   });
 }

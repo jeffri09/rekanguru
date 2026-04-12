@@ -3,7 +3,7 @@
 // ============================================================
 
 const initialState = {
-  // App view: 'dashboard' | 'document' | 'crossword'
+  // App view: 'dashboard' | 'document' | 'crossword' | 'sumatif'
   currentView: 'dashboard',
 
   // Current wizard step (for document wizard)
@@ -73,6 +73,34 @@ const initialState = {
     answerLang: 'id',  // 'id' | 'en' | 'ar'
     words: [], // { word, clue, direction, row, col, number }
     grid: null,
+    isGenerating: false,
+  },
+
+  // Soal Sumatif state
+  sumatif: {
+    topic: '',
+    subject: '',
+    classPhase: '',
+    schoolLevel: 'kota',
+    enabledTypes: {
+      pilihan_ganda: true,
+      isian_singkat: false,
+      esai: false,
+      mencocokkan: false,
+    },
+    pgOptionCount: 4, // 3 = A-C, 4 = A-D, 5 = A-E
+    difficulty: {
+      pilihan_ganda: 'sedang',
+      isian_singkat: 'sedang',
+      esai: 'sedang',
+      mencocokkan: 'sedang',
+    },
+    questionCount: {
+      pilihan_ganda: 10,
+      isian_singkat: 5,
+      esai: 3,
+      mencocokkan: 5,
+    },
     isGenerating: false,
   },
 };
