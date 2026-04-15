@@ -260,15 +260,38 @@ async function callQwen(prompt, maxRetries = 2) {
 }
 
 /**
- * Main AI call — routes to the active provider
+ * Main AI call — routes to active provider with auto-fallback
+ * Gemini gagal → otomatis coba Qwen, dan sebaliknya
  */
 export async function generateText(prompt) {
   const provider = state.get('settings.apiProvider');
 
   if (provider === 'qwen') {
-    return callQwen(prompt);
+    try {
+      return await callQwen(prompt);
+    } catch (err) {
+      console.warn('Qwen gagal, fallback ke Gemini:', err.message);
+      showToast('⚠️ Qwen gagal, mencoba Gemini...', 'info', 3000);
+      try {
+        return await callGemini(prompt);
+      } catch (err2) {
+        throw new Error(`Qwen: ${err.message} | Gemini fallback: ${err2.message}`);
+      }
+    }
   }
-  return callGemini(prompt);
+
+  // Default: Gemini first → fallback Qwen
+  try {
+    return await callGemini(prompt);
+  } catch (err) {
+    console.warn('Gemini gagal, fallback ke Qwen:', err.message);
+    showToast('⚠️ Gemini gagal, mencoba Qwen...', 'info', 3000);
+    try {
+      return await callQwen(prompt);
+    } catch (err2) {
+      throw new Error(`Gemini: ${err.message} | Qwen fallback: ${err2.message}`);
+    }
+  }
 }
 
 /**
