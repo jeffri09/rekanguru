@@ -207,61 +207,56 @@ function showApiKeyGuide() {
 }
 
 /**
- * Call Qwen API (via Vite proxy to avoid CORS)
+ * Call Qwen via Vercel Server Proxy (same pattern as Gemini)
+ * Server key from QWEN_API_KEY env, or user's own key as fallback
  */
-async function callQwen(prompt, maxRetries = 2) {
-  const apiKey = state.get('settings.qwenKey');
-  const model = state.get('settings.qwenModel') || 'qwen-plus';
+let qwenServerKeyExhausted = false;
 
-  if (!apiKey) throw new Error('Qwen API key tidak ditemukan. Masukkan di ⚙️ Settings.');
-
-  const url = '/api/qwen/chat/completions';
+async function callQwenProxy(prompt, userApiKey, maxRetries = 2) {
+  const model = state.get('settings.qwenModel') || 'qvq-max-2025-03-25';
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      await rateLimit('qwen');
+    const response = await fetch('/api/qwen', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, model, userApiKey: userApiKey || '' }),
+    });
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: 'Kamu adalah penulis profesional. Ikuti instruksi dengan tepat.' },
-            { role: 'user', content: prompt },
-          ],
-          max_tokens: 8192,
-          temperature: 0.7,
-          top_p: 0.9,
-        }),
-      });
+    const data = await response.json();
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        if (response.status === 429) {
-          console.warn(`Qwen rate limited (attempt ${attempt + 1}), waiting...`);
-          await sleep(10000 * (attempt + 1));
-          continue;
-        }
-        throw new Error(err.error?.message || `Qwen API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.choices?.[0]?.message?.content) {
-        return data.choices[0].message.content;
-      }
-
-      throw new Error('Tidak ada respons dari Qwen API.');
-    } catch (err) {
-      if (attempt === maxRetries) throw err;
-      console.warn(`Retry ${attempt + 1}:`, err.message);
-      await sleep(3000 * (attempt + 1));
+    if (data.useOwnKey) {
+      qwenServerKeyExhausted = true;
+      throw new Error(data.error || 'Server Qwen key not available');
     }
+
+    if (data.rateLimited && data.retryAfter) {
+      if (attempt < maxRetries) {
+        const waitSec = Math.min(data.retryAfter, 30);
+        showToast(`⏳ Qwen sibuk, menunggu ${waitSec} detik...`, 'info', waitSec * 1000);
+        await sleep(waitSec * 1000);
+        continue;
+      }
+      throw new Error(data.error);
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || `Qwen proxy error: ${response.status}`);
+    }
+
+    return data.text;
   }
+}
+
+/**
+ * Main Qwen call — tries server proxy with user key or server key
+ */
+async function callQwen(prompt, maxRetries = 2) {
+  const userKey = state.get('settings.qwenKey')?.trim();
+
+  await rateLimit('qwen');
+
+  // Always go through proxy (handles CORS + correct endpoint)
+  return callQwenProxy(prompt, userKey, maxRetries);
 }
 
 /**
