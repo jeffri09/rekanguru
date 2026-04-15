@@ -21,6 +21,17 @@ const initialState = {
     description: '',
     chapterLength: 'sedang',
     referenceText: '',
+
+    // CP Scanning
+    cpData: [],         // Array of { id, code, description, profilLulusan[] }
+    cpScanned: false,   // Whether CP has been scanned
+
+    // Modul Ajar Multi-Pertemuan
+    modulAjarMode: null,      // null | 'tahunan' | 'semester'
+    totalPertemuan: 12,       // 12-16 (tahunan) or 6-8 (semester)
+    jumlahSumatif: 0,         // 0-6 sumatif slots
+    sumatifPositions: [],     // Custom positions or auto-generated, e.g. [3,6,9,12]
+    distribusiPertemuan: [],  // Array of { pertemuan, type:'cp'|'sumatif', cpIndex, cpTitle, details }
   },
 
   // Outline

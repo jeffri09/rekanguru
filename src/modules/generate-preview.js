@@ -1,5 +1,6 @@
 // ============================================================
 // Generate & Preview Module — Step 2: Combined Outline+Generate+Edit
+// Enhanced: Multi-pertemuan modul ajar support
 // ============================================================
 
 import { state } from '../state.js';
@@ -89,10 +90,14 @@ export default {
             const wc = chContent?.wordCount || 0;
             const isActive = ch.id === activeChapterId;
             const isDone = chContent?.generated;
+            const chType = ch.meetingType || 'cp';
             return `
-              <div class="sidebar-chapter ${isActive ? 'active' : ''}" data-id="${ch.id}">
+              <div class="sidebar-chapter ${isActive ? 'active' : ''} ${chType === 'sumatif' ? 'sidebar-sumatif' : ''}" data-id="${ch.id}">
                 <div class="sidebar-chapter-num">${isDone ? '✅' : (idx + 1)}</div>
-                <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(ch.title)}</span>
+                <div style="flex:1; overflow:hidden; min-width:0;">
+                  <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(ch.title)}</span>
+                  ${chType === 'sumatif' ? '<span class="sidebar-badge badge-sumatif-sm">📝 Sumatif</span>' : chType === 'cp' && ch.meetingType ? '<span class="sidebar-badge badge-cp-sm">📚 CP</span>' : ''}
+                </div>
                 <span class="word-count">${wc > 0 ? formatNumber(wc) : '—'}</span>
               </div>
             `;
@@ -223,21 +228,44 @@ export default {
     try {
       // PHASE 1: Generate outline if no chapters yet
       if (chapters.length === 0) {
-        this.updateStatus('Membuat kerangka dokumen...');
-        const prompt = outlinePrompt(book);
-        const response = await generateText(prompt);
-        const data = parseJsonResponse(response);
+        // Check if multi-pertemuan mode is active
+        const modulAjarMode = book.modulAjarMode;
+        const distribusi = book.distribusiPertemuan || [];
 
-        if (data.chapters && Array.isArray(data.chapters)) {
-          chapters = data.chapters.map(ch => ({
+        if (modulAjarMode && distribusi.length > 0) {
+          // Build chapters from distribusi pertemuan
+          this.updateStatus('Membuat kerangka dari distribusi pertemuan...');
+          chapters = distribusi.map(p => ({
             id: uid(),
-            title: ch.title || 'Tanpa Judul',
-            sections: ch.sections || [],
+            title: p.type === 'sumatif' 
+              ? `Pertemuan ${p.pertemuan}: ${p.title || 'Sumatif Harian'}` 
+              : `Pertemuan ${p.pertemuan}: ${p.title || 'Pembelajaran CP'}`,
+            sections: p.type === 'sumatif' 
+              ? ['Kisi-kisi', 'Soal Sumatif', 'Kunci Jawaban', 'Rubrik Penilaian', 'Tindak Lanjut']
+              : ['Tujuan Pembelajaran', 'Pemahaman Bermakna', 'Pertanyaan Pemantik', 'Kegiatan Pembelajaran', 'Asesmen Formatif', 'Refleksi'],
+            meetingType: p.type,
+            meetingData: p,
           }));
           state.set('outline.chapters', chapters);
-          showToast(`Kerangka berhasil! ${chapters.length} komponen.`, 'success');
+          showToast(`Kerangka ${chapters.length} pertemuan berhasil dibuat!`, 'success');
         } else {
-          throw new Error('Format respons AI tidak sesuai.');
+          // Standard outline generation
+          this.updateStatus('Membuat kerangka dokumen...');
+          const prompt = outlinePrompt(book);
+          const response = await generateText(prompt);
+          const data = parseJsonResponse(response);
+
+          if (data.chapters && Array.isArray(data.chapters)) {
+            chapters = data.chapters.map(ch => ({
+              id: uid(),
+              title: ch.title || 'Tanpa Judul',
+              sections: ch.sections || [],
+            }));
+            state.set('outline.chapters', chapters);
+            showToast(`Kerangka berhasil! ${chapters.length} komponen.`, 'success');
+          } else {
+            throw new Error('Format respons AI tidak sesuai.');
+          }
         }
 
         // Re-render to show the editor layout

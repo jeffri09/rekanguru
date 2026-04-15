@@ -489,8 +489,25 @@ export async function buildAndDownload(book, outline, content, exportSettings) {
 
   // ====== PACK & DOWNLOAD ======
   const blob = await Packer.toBlob(doc);
-  const rawFilename = getDocLabelStr(book) + '_' + (book.topic || 'Otomatis');
-  const filename = `${rawFilename.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}.docx`;
+  
+  // Improved file naming: [Mapel]_[Fase]_[DocType]_[Year].docx
+  const sanitize = (str) => str.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 30);
+  const year = new Date().getFullYear();
+  const subjectPart = book.subject ? sanitize(book.subject) : '';
+  const phasePart = book.classPhase ? sanitize(book.classPhase) : '';
+  const docTypePart = getDocLabelStr(book);
+  
+  let filenameParts = [];
+  if (subjectPart) filenameParts.push(subjectPart);
+  if (phasePart) filenameParts.push(phasePart);
+  filenameParts.push(docTypePart);
+  if (book.modulAjarMode) {
+    filenameParts.push(book.modulAjarMode === 'tahunan' ? '1Tahun' : '1Semester');
+    filenameParts.push(`${book.totalPertemuan || 0}Pertemuan`);
+  }
+  filenameParts.push(year.toString());
+  
+  const filename = filenameParts.join('_') + '.docx';
   saveAs(blob, filename);
 
   return filename;

@@ -32,6 +32,18 @@ export default {
           <span class="stat-value">~${Math.ceil(totalWords / 250)}</span>
           <span class="stat-label">Est. Halaman</span>
         </div>
+        ${book.cpScanned ? `
+          <div class="stat-item">
+            <span class="stat-value">${(book.cpData || []).length}</span>
+            <span class="stat-label">CP Terverifikasi</span>
+          </div>
+        ` : ''}
+        ${book.modulAjarMode ? `
+          <div class="stat-item">
+            <span class="stat-value">${book.modulAjarMode === 'tahunan' ? '1 Thn' : '1 Smt'}</span>
+            <span class="stat-label">${book.totalPertemuan || 0} Pertemuan</span>
+          </div>
+        ` : ''}
       </div>
 
       <div class="export-grid">
@@ -149,6 +161,8 @@ export default {
           <h1 style="font-family: ${settings.headingFont}; font-size: ${settings.headingSize}pt; margin-bottom: 8px;">${escapeHtml(title)}</h1>
           <div style="color: #8b5cf6; margin-bottom: 12px;">━━━━━━━━━━━━</div>
           <p style="font-style: italic; color: #777; font-size: 0.85rem;">${escapeHtml(book.subject || '')} ${book.classPhase ? '— ' + escapeHtml(book.classPhase) : ''}</p>
+          ${book.cpScanned ? `<p style="margin-top: 8px; font-size: 0.75rem; color: #8b5cf6;">✅ ${(book.cpData || []).length} CP Terverifikasi</p>` : ''}
+          ${book.modulAjarMode ? `<p style="font-size: 0.75rem; color: #059669;">📅 ${book.modulAjarMode === 'tahunan' ? '1 Tahun' : '1 Semester'} · ${book.totalPertemuan} Pertemuan</p>` : ''}
           <p style="margin-top: 20px; color: #555;">Kurikulum Merdeka ${new Date().getFullYear()}</p>
         </div>
       `;

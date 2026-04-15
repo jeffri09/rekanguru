@@ -2197,3 +2197,351 @@ input, select, textarea {
   margin-bottom: 4px;
   border: 1px solid var(--border-subtle);
 }
+
+/* ============================================================
+   CP SCANNING STYLES
+   ============================================================ */
+
+.cp-scanning-card {
+  border-color: rgba(6, 182, 212, 0.2);
+}
+
+.cp-results {
+  animation: fadeSlideIn 0.3s ease;
+}
+
+.cp-results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.cp-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.cp-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  transition: all var(--transition-base);
+}
+
+.cp-item:hover {
+  border-color: var(--border-default);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cp-item-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.cp-item-number {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  background: rgba(139, 92, 246, 0.15);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.5px;
+}
+
+.cp-item-code {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.cp-item-delete {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all var(--transition-fast);
+  opacity: 0;
+}
+
+.cp-item:hover .cp-item-delete {
+  opacity: 1;
+}
+
+.cp-item-delete:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.cp-item-desc {
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-primary);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  resize: vertical;
+  outline: none;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+
+.cp-item-desc:focus {
+  background: var(--bg-input);
+  border-color: var(--border-default);
+}
+
+.cp-profil-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: var(--space-xs);
+}
+
+.cp-profil-tag {
+  font-size: 10px;
+  padding: 2px 8px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  font-weight: 500;
+}
+
+/* ============================================================
+   MODUL AJAR MULTI-PERTEMUAN STYLES
+   ============================================================ */
+
+.modul-ajar-card {
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.modul-ajar-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+}
+
+/* ====== RANGE SLIDER ====== */
+.form-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  outline: none;
+  margin: var(--space-sm) 0;
+  cursor: pointer;
+}
+
+.form-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-range::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.6);
+}
+
+.form-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.form-range::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  height: 6px;
+  border-radius: 3px;
+}
+
+.range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* ============================================================
+   DISTRIBUSI PREVIEW STYLES
+   ============================================================ */
+
+.distribusi-preview {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  animation: fadeSlideIn 0.3s ease;
+}
+
+.distribusi-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.distribusi-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 8px var(--space-md);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.distribusi-cp {
+  background: rgba(139, 92, 246, 0.04);
+  border-left: 3px solid rgba(139, 92, 246, 0.4);
+}
+
+.distribusi-cp:hover {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.distribusi-sumatif {
+  background: rgba(245, 158, 11, 0.06);
+  border-left: 3px solid rgba(245, 158, 11, 0.5);
+}
+
+.distribusi-sumatif:hover {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.distribusi-num {
+  min-width: 32px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+
+.distribusi-sumatif .distribusi-num {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.distribusi-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+  min-width: 0;
+}
+
+.distribusi-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-cp {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+}
+
+.badge-sumatif {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.distribusi-title {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   SIDEBAR BADGES (for multi-pertemuan view)
+   ============================================================ */
+
+.sidebar-sumatif {
+  border-left: 2px solid rgba(245, 158, 11, 0.5);
+}
+
+.sidebar-badge {
+  display: inline-block;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.badge-sumatif-sm {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+}
+
+.badge-cp-sm {
+  background: rgba(139, 92, 246, 0.12);
+  color: #a78bfa;
+}
+
+/* ============================================================
+   CHECKBOX / RADIO ITEM STYLES (for sumatif position config)
+   ============================================================ */
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+}
+
+.checkbox-item:hover {
+  color: var(--text-primary);
+}
+
+.checkbox-item input[type="radio"],
+.checkbox-item input[type="checkbox"] {
+  accent-color: var(--accent-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
