@@ -6,7 +6,7 @@ import './styles/index.css';
 import { state } from './state.js';
 import { registerSteps, initWizard } from './modules/wizard.js';
 import { showToast, showModal, hideModal, uid, formatDate } from './utils/helpers.js';
-import { saveProject, getProjects, loadProject, deleteProject, autoSave, loadAutoSave } from './services/storage.js';
+import { saveProject, getProjects, loadProject, deleteProject, autoSave, loadAutoSave, saveProfile, loadProfile } from './services/storage.js';
 import { testConnection } from './services/gemini.js';
 
 // Import step modules (3-step wizard)
@@ -25,6 +25,7 @@ function init() {
   setupHeaderButtons();
   setupAutoSave();
   checkAutoSaveRecovery();
+  loadSavedProfile();
 
   // Listen for view changes
   window.addEventListener('viewchange', () => renderView());
@@ -176,10 +177,37 @@ function setupHeaderButtons() {
 // ====== API SETTINGS MODAL ======
 function showSettingsModal() {
   const settings = state.get('settings');
+  const profile = state.get('profile') || {};
+
+  const geminiModels = [
+    { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (Default, Cepat)', stable: true },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Kualitas Tinggi)', stable: true },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Premium)', stable: true },
+    { value: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash Lite ⚠️ (Preview)', stable: false },
+    { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro ⚠️ (Preview)', stable: false },
+  ];
 
   const bodyHtml = `
-    <div class="form-group">
-      <label class="form-label">Penyedia AI Aktif</label>
+    <div class="settings-section">
+      <label class="form-label" style="font-weight:700; margin-bottom: var(--space-sm);">Penyedia AI Aktif</label>
+      <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+        <label class="toggle-chip ${settings.enableGemini !== false ? 'active' : ''}" id="modal-toggle-gemini">
+          <input type="checkbox" id="modal-enable-gemini" ${settings.enableGemini !== false ? 'checked' : ''} hidden />
+          ✨ Gemini
+        </label>
+        <label class="toggle-chip ${settings.enableQwen ? 'active' : ''}" id="modal-toggle-qwen">
+          <input type="checkbox" id="modal-enable-qwen" ${settings.enableQwen ? 'checked' : ''} hidden />
+          🤖 Qwen
+        </label>
+      </div>
+      <label class="checkbox-label" style="font-size: 0.85rem; opacity: 0.8;">
+        <input type="checkbox" id="modal-auto-fallback" ${settings.autoFallback ? 'checked' : ''} />
+        Auto-Fallback (jika provider aktif gagal, coba provider lain)
+      </label>
+    </div>
+
+    <div class="settings-section">
+      <label class="form-label" style="font-weight:700;">Penyedia Utama</label>
       <div style="display: flex; gap: var(--space-sm);">
         <button class="btn ${settings.apiProvider === 'gemini' ? 'btn-primary' : 'btn-secondary'}" id="modal-provider-gemini" style="flex:1;">✨ Gemini</button>
         <button class="btn ${settings.apiProvider === 'qwen' ? 'btn-primary' : 'btn-secondary'}" id="modal-provider-qwen" style="flex:1;">🤖 Qwen</button>
@@ -207,8 +235,7 @@ function showSettingsModal() {
       <div class="form-group">
         <label class="form-label" for="modal-gemini-model">Model Gemini</label>
         <select class="form-select" id="modal-gemini-model">
-          <option value="gemini-3.1-flash-lite-preview" ${settings.geminiModel === 'gemini-3.1-flash-lite-preview' ? 'selected' : ''}>Gemini 3.1 Flash Lite</option>
-          <option value="gemini-3.1-pro-preview" ${settings.geminiModel === 'gemini-3.1-pro-preview' ? 'selected' : ''}>Gemini 3.1 Pro</option>
+          ${geminiModels.map(m => `<option value="${m.value}" ${settings.geminiModel === m.value ? 'selected' : ''}>${m.label}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
@@ -225,19 +252,103 @@ function showSettingsModal() {
       <button class="btn btn-secondary btn-sm" id="modal-test-gemini">🧪 Test Gemini</button>
       <button class="btn btn-secondary btn-sm" id="modal-test-qwen">🧪 Test Qwen</button>
     </div>
+
+    <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: var(--space-md) 0;" />
+
+    <details class="settings-profile-section">
+      <summary style="cursor:pointer; font-weight:700; margin-bottom: var(--space-sm);">👤 Profil Guru & Sekolah</summary>
+      <div class="form-row" style="margin-top: var(--space-sm);">
+        <div class="form-group">
+          <label class="form-label" for="modal-nama-guru">Nama Guru</label>
+          <input class="form-input" id="modal-nama-guru" placeholder="Nama lengkap guru" value="${profile.namaGuru || ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="modal-nip">NIP (opsional)</label>
+          <input class="form-input" id="modal-nip" placeholder="NIP" value="${profile.nip || ''}" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="modal-nama-sekolah">Nama Sekolah</label>
+          <input class="form-input" id="modal-nama-sekolah" placeholder="SMP Negeri 1 ..." value="${profile.namaSekolah || ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="modal-npsn">NPSN (opsional)</label>
+          <input class="form-input" id="modal-npsn" placeholder="NPSN" value="${profile.npsn || ''}" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="modal-alamat-sekolah">Alamat Sekolah</label>
+        <input class="form-input" id="modal-alamat-sekolah" placeholder="Jl. Pendidikan No. 1, Kec. ..." value="${profile.alamatSekolah || ''}" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="modal-kab-kota">Kabupaten/Kota</label>
+          <input class="form-input" id="modal-kab-kota" placeholder="Kabupaten/Kota" value="${profile.kabupatenKota || ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="modal-provinsi">Provinsi</label>
+          <input class="form-input" id="modal-provinsi" placeholder="Provinsi" value="${profile.provinsi || ''}" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="modal-nama-kepsek">Nama Kepala Sekolah</label>
+          <input class="form-input" id="modal-nama-kepsek" placeholder="Nama Kepala Sekolah" value="${profile.namaKepalaSekolah || ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="modal-nip-kepsek">NIP Kepala Sekolah (opsional)</label>
+          <input class="form-input" id="modal-nip-kepsek" placeholder="NIP" value="${profile.nipKepalaSekolah || ''}" />
+        </div>
+      </div>
+    </details>
   `;
 
-  showModal('⚙️ Pengaturan AI', bodyHtml, [
+  showModal('⚙️ Pengaturan AI & Profil', bodyHtml, [
     {
       text: 'Simpan',
       class: 'btn-primary',
       onClick: () => {
+        // Save provider settings
         state.set('settings.apiProvider', document.getElementById('modal-provider-gemini')?.classList.contains('btn-primary') ? 'gemini' : 'qwen');
+        state.set('settings.enableGemini', document.getElementById('modal-enable-gemini')?.checked ?? true);
+        state.set('settings.enableQwen', document.getElementById('modal-enable-qwen')?.checked ?? false);
+        state.set('settings.autoFallback', document.getElementById('modal-auto-fallback')?.checked ?? false);
         state.set('settings.geminiKey', document.getElementById('modal-gemini-key')?.value || '');
         state.set('settings.qwenKey', document.getElementById('modal-qwen-key')?.value || '');
-        state.set('settings.geminiModel', document.getElementById('modal-gemini-model')?.value || 'gemini-3.1-flash-lite-preview');
+        state.set('settings.geminiModel', document.getElementById('modal-gemini-model')?.value || 'gemini-2.5-flash-lite');
         state.set('settings.qwenModel', document.getElementById('modal-qwen-model')?.value || 'qvq-max-2025-03-25');
-        showToast('Pengaturan AI disimpan!', 'success');
+
+        // Save profile
+        const profileData = {
+          namaGuru: document.getElementById('modal-nama-guru')?.value || '',
+          nip: document.getElementById('modal-nip')?.value || '',
+          jabatan: 'Guru Mata Pelajaran',
+          namaSekolah: document.getElementById('modal-nama-sekolah')?.value || '',
+          npsn: document.getElementById('modal-npsn')?.value || '',
+          alamatSekolah: document.getElementById('modal-alamat-sekolah')?.value || '',
+          kabupatenKota: document.getElementById('modal-kab-kota')?.value || '',
+          provinsi: document.getElementById('modal-provinsi')?.value || '',
+          namaKepalaSekolah: document.getElementById('modal-nama-kepsek')?.value || '',
+          nipKepalaSekolah: document.getElementById('modal-nip-kepsek')?.value || '',
+        };
+        state.set('profile', profileData);
+        saveProfile(profileData);
+
+        // Also persist settings
+        const settingsToSave = {
+          apiProvider: state.get('settings.apiProvider'),
+          enableGemini: state.get('settings.enableGemini'),
+          enableQwen: state.get('settings.enableQwen'),
+          autoFallback: state.get('settings.autoFallback'),
+          geminiKey: state.get('settings.geminiKey'),
+          qwenKey: state.get('settings.qwenKey'),
+          geminiModel: state.get('settings.geminiModel'),
+          qwenModel: state.get('settings.qwenModel'),
+        };
+        try { localStorage.setItem('perangkat_guru_settings', JSON.stringify(settingsToSave)); } catch {}
+
+        showToast('Pengaturan & profil disimpan!', 'success');
       },
     },
     { text: 'Batal', class: 'btn-ghost' },
@@ -259,6 +370,16 @@ function showSettingsModal() {
       document.getElementById('modal-provider-qwen').style.flex = '1';
     });
 
+    // Enable/disable toggle chips
+    ['modal-toggle-gemini', 'modal-toggle-qwen'].forEach(id => {
+      document.getElementById(id)?.addEventListener('click', () => {
+        const el = document.getElementById(id);
+        const cb = el.querySelector('input[type=checkbox]');
+        cb.checked = !cb.checked;
+        el.classList.toggle('active', cb.checked);
+      });
+    });
+
     // Toggle visibility
     document.querySelectorAll('#modal-body .btn-toggle-visibility').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -271,9 +392,8 @@ function showSettingsModal() {
     // Test connections
     document.getElementById('modal-test-gemini')?.addEventListener('click', async () => {
       const btn = document.getElementById('modal-test-gemini');
-      // Save keys first
       state.set('settings.geminiKey', document.getElementById('modal-gemini-key')?.value || '');
-      state.set('settings.geminiModel', document.getElementById('modal-gemini-model')?.value || 'gemini-3.1-flash-lite-preview');
+      state.set('settings.geminiModel', document.getElementById('modal-gemini-model')?.value || 'gemini-2.5-flash-lite');
       btn.disabled = true; btn.textContent = '⏳ Testing...';
       try { await testConnection('gemini'); showToast('Gemini API berhasil terhubung!', 'success'); }
       catch (e) { showToast(e.message, 'error'); }
@@ -410,6 +530,29 @@ function checkAutoSaveRecovery() {
       6000
     );
   }
+}
+
+// ====== PROFILE PERSISTENCE ======
+function loadSavedProfile() {
+  const savedProfile = loadProfile();
+  if (savedProfile) {
+    state.set('profile', savedProfile);
+  }
+
+  // Also load saved settings (API keys, model selection, etc.)
+  const savedSettings = loadSavedSettings();
+  if (savedSettings) {
+    Object.entries(savedSettings).forEach(([key, value]) => {
+      state.set(`settings.${key}`, value);
+    });
+  }
+}
+
+function loadSavedSettings() {
+  try {
+    const saved = localStorage.getItem('perangkat_guru_settings');
+    return saved ? JSON.parse(saved) : null;
+  } catch { return null; }
 }
 
 // ====== START ======

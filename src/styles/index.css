@@ -2545,3 +2545,78 @@ input, select, textarea {
   cursor: pointer;
 }
 
+/* ============================================================
+   TOGGLE CHIPS (Provider Enable/Disable)
+   ============================================================ */
+
+.toggle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-default);
+  background: var(--glass-bg);
+  color: var(--text-tertiary);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  user-select: none;
+}
+
+.toggle-chip:hover {
+  border-color: var(--border-strong);
+  color: var(--text-secondary);
+}
+
+.toggle-chip.active {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: var(--accent-primary);
+  color: var(--text-accent);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+}
+
+/* ============================================================
+   CHECKBOX LABEL (Settings)
+   ============================================================ */
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+}
+
+.checkbox-label input[type="checkbox"] {
+  accent-color: var(--accent-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* ============================================================
+   SETTINGS SECTIONS
+   ============================================================ */
+
+.settings-section {
+  margin-bottom: var(--space-md);
+}
+
+.settings-profile-section summary {
+  color: var(--text-secondary);
+  font-size: var(--fs-base);
+  transition: color var(--transition-base);
+}
+
+.settings-profile-section summary:hover {
+  color: var(--text-primary);
+}
+
+.settings-profile-section[open] summary {
+  color: var(--text-accent);
+  margin-bottom: var(--space-md);
+}
+

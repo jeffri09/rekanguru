@@ -27,8 +27,8 @@ async function rateLimit(provider = 'gemini') {
  * Call Gemini via Vercel Server Proxy (default key on server)
  * Returns { text, useOwnKey } or throws error
  */
-async function callGeminiProxy(prompt, maxRetries = 2) {
-  const model = state.get('settings.geminiModel') || 'gemini-3.1-flash-lite-preview';
+async function callGeminiProxy(prompt, maxRetries = 4) {
+  const model = state.get('settings.geminiModel') || 'gemini-2.5-flash-lite';
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const response = await fetch('/api/gemini', {
@@ -66,20 +66,20 @@ async function callGeminiProxy(prompt, maxRetries = 2) {
 /**
  * Call Gemini API directly with user's own key
  */
-async function callGeminiDirect(prompt, maxRetries = 2) {
+async function callGeminiDirect(prompt, maxRetries = 4) {
   const apiKey = state.get('settings.geminiKey');
-  const model = state.get('settings.geminiModel') || 'gemini-3.1-flash-lite-preview';
+  let model = state.get('settings.geminiModel') || 'gemini-2.5-flash-lite';
 
   if (!apiKey) {
     showApiKeyGuide();
     throw new Error('API key diperlukan. Lihat petunjuk di layar.');
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       await rateLimit('gemini');
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
       const response = await fetch(url, {
         method: 'POST',
@@ -96,11 +96,34 @@ async function callGeminiDirect(prompt, maxRetries = 2) {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
+
+        // Rate limited — retry with backoff
         if (response.status === 429) {
           console.warn(`Gemini rate limited (attempt ${attempt + 1}), waiting...`);
           await sleep(10000 * (attempt + 1));
           continue;
         }
+
+        // Model overloaded (503) — retry with backoff (like Python SDK tenacity)
+        if (response.status === 503) {
+          if (attempt < maxRetries) {
+            const waitSec = Math.min(5 * (attempt + 1), 20);
+            showToast(`⏳ Model sibuk, retry ${attempt + 1}/${maxRetries} (${waitSec}s)...`, 'info', waitSec * 1000);
+            await sleep(waitSec * 1000);
+            continue;
+          }
+          throw new Error('Model sedang sibuk (503). Coba ganti model di ⚙️ Settings atau coba lagi nanti.');
+        }
+
+        // Model not found (404) — auto-switch to stable default
+        if (response.status === 404) {
+          console.warn(`Model ${model} not found, switching to gemini-2.5-flash-lite`);
+          showToast('⚠️ Model tidak tersedia, beralih ke Gemini 2.5 Flash Lite', 'warning');
+          model = 'gemini-2.5-flash-lite';
+          state.set('settings.geminiModel', model);
+          continue;
+        }
+
         throw new Error(err.error?.message || `Gemini API error: ${response.status}`);
       }
 
@@ -260,37 +283,44 @@ async function callQwen(prompt, maxRetries = 2) {
 }
 
 /**
- * Main AI call — routes to active provider with auto-fallback
- * Gemini gagal → otomatis coba Qwen, dan sebaliknya
+ * Main AI call — routes to active provider
+ * Auto-fallback hanya jika settings.autoFallback === true
  */
 export async function generateText(prompt) {
   const provider = state.get('settings.apiProvider');
+  const autoFallback = state.get('settings.autoFallback');
 
   if (provider === 'qwen') {
     try {
       return await callQwen(prompt);
     } catch (err) {
-      console.warn('Qwen gagal, fallback ke Gemini:', err.message);
-      showToast('⚠️ Qwen gagal, mencoba Gemini...', 'info', 3000);
-      try {
-        return await callGemini(prompt);
-      } catch (err2) {
-        throw new Error(`Qwen: ${err.message} | Gemini fallback: ${err2.message}`);
+      if (autoFallback && state.get('settings.enableGemini')) {
+        console.warn('Qwen gagal, fallback ke Gemini:', err.message);
+        showToast('⚠️ Qwen gagal, mencoba Gemini...', 'info', 3000);
+        try {
+          return await callGemini(prompt);
+        } catch (err2) {
+          throw new Error(`Qwen: ${err.message} | Gemini fallback: ${err2.message}`);
+        }
       }
+      throw err;
     }
   }
 
-  // Default: Gemini first → fallback Qwen
+  // Default: Gemini
   try {
     return await callGemini(prompt);
   } catch (err) {
-    console.warn('Gemini gagal, fallback ke Qwen:', err.message);
-    showToast('⚠️ Gemini gagal, mencoba Qwen...', 'info', 3000);
-    try {
-      return await callQwen(prompt);
-    } catch (err2) {
-      throw new Error(`Gemini: ${err.message} | Qwen fallback: ${err2.message}`);
+    if (autoFallback && state.get('settings.enableQwen')) {
+      console.warn('Gemini gagal, fallback ke Qwen:', err.message);
+      showToast('⚠️ Gemini gagal, mencoba Qwen...', 'info', 3000);
+      try {
+        return await callQwen(prompt);
+      } catch (err2) {
+        throw new Error(`Gemini: ${err.message} | Qwen fallback: ${err2.message}`);
+      }
     }
+    throw err;
   }
 }
 

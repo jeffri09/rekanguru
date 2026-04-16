@@ -194,6 +194,155 @@ export default {
         </div>
       </div>
 
+      <!-- ====== JENJANG & SEMESTER (Phase 1) ====== -->
+      <div class="card" style="margin-bottom: var(--space-lg);" id="jenjang-card">
+        <div class="card-header">
+          <h3 class="card-title">🎓 Jenjang & Semester</h3>
+          <span class="badge badge-purple">Penting</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Jenjang Sekolah</label>
+            <div class="school-level-grid" id="jenjang-grid">
+              ${['SD', 'SMP', 'SMA', 'SMK', 'MA'].map(j => `
+                <label class="school-level-card ${book.jenjang === j ? 'active' : ''}" style="padding: 10px 14px;">
+                  <input type="radio" name="jenjang" value="${j}" ${book.jenjang === j ? 'checked' : ''} />
+                  <div class="school-level-title" style="font-size: 0.85rem;">${j}</div>
+                </label>
+              `).join('')}
+            </div>
+            <small class="form-hint">Mempengaruhi durasi JP: SD=30, SMP=40, SMA/SMK/MA=45 menit</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-semester">Semester</label>
+            <select class="form-select" id="input-semester">
+              <option value="1" ${book.semester === '1' ? 'selected' : ''}>Semester 1 (Ganjil)</option>
+              <option value="2" ${book.semester === '2' ? 'selected' : ''}>Semester 2 (Genap)</option>
+            </select>
+            <div class="form-group" style="margin-top: var(--space-sm);">
+              <label class="form-label" for="input-tahun-ajaran">Tahun Ajaran</label>
+              <input class="form-input" id="input-tahun-ajaran" type="text" placeholder="2025/2026" value="${book.tahunAjaran || ''}" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== ALOKASI WAKTU (Phase 2) ====== -->
+      <div class="card" style="margin-bottom: var(--space-lg);" id="alokasi-waktu-card">
+        <div class="card-header">
+          <h3 class="card-title">⏱️ Alokasi Waktu Pembelajaran</h3>
+          <span class="badge badge-cyan">Penting</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="input-durasi-jp">Durasi per JP: <strong id="durasi-jp-value">${(book.alokasiWaktu || {}).durasiJP || 40}</strong> menit</label>
+            <input type="range" class="form-range" id="input-durasi-jp" min="25" max="50" step="5" value="${(book.alokasiWaktu || {}).durasiJP || 40}" />
+            <div class="range-labels"><span>25</span><span>30 (SD)</span><span>40 (SMP)</span><span>45 (SMA)</span><span>50</span></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-jp-per-pertemuan">JP per Pertemuan: <strong id="jp-per-pertemuan-value">${(book.alokasiWaktu || {}).jpPerPertemuan || 2}</strong></label>
+            <input type="range" class="form-range" id="input-jp-per-pertemuan" min="1" max="6" value="${(book.alokasiWaktu || {}).jpPerPertemuan || 2}" />
+            <div class="range-labels"><span>1 JP</span><span>6 JP</span></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="input-jp-per-minggu">JP per Minggu: <strong id="jp-per-minggu-value">${(book.alokasiWaktu || {}).jpPerMinggu || 4}</strong></label>
+            <input type="range" class="form-range" id="input-jp-per-minggu" min="1" max="12" value="${(book.alokasiWaktu || {}).jpPerMinggu || 4}" />
+            <div class="range-labels"><span>1</span><span>12</span></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Total Menit per Pertemuan</label>
+            <div id="total-menit-display" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-primary);">
+              ${((book.alokasiWaktu || {}).jpPerPertemuan || 2) * ((book.alokasiWaktu || {}).durasiJP || 40)} menit
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== SUMATIF CONFIG (Phase 3) ====== -->
+      <div class="card" style="margin-bottom: var(--space-lg);" id="sumatif-config-card">
+        <div class="card-header">
+          <h3 class="card-title">📝 Konfigurasi Sumatif dalam Modul Ajar</h3>
+          <span class="badge badge-green">Opsional</span>
+        </div>
+        <p class="form-hint" style="margin-bottom: var(--space-md);">
+          Atur komposisi soal untuk pertemuan sumatif harian di dalam modul ajar. Konfigurasi ini berlaku untuk SEMUA pertemuan sumatif.
+        </p>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Jenis & Jumlah Soal</label>
+            ${[
+              { key: 'pilihan_ganda', label: 'Pilihan Ganda', icon: '🔘' },
+              { key: 'isian_singkat', label: 'Isian Singkat', icon: '✏️' },
+              { key: 'esai', label: 'Esai/Uraian', icon: '📝' },
+              { key: 'mencocokkan', label: 'Mencocokkan', icon: '🔗' },
+            ].map(t => `
+              <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+                <label class="checkbox-label" style="min-width: 160px;">
+                  <input type="checkbox" class="sumatif-type-toggle" data-type="${t.key}" 
+                    ${(book.sumatifConfig || {}).enabledTypes?.[t.key] ? 'checked' : ''} />
+                  ${t.icon} ${t.label}
+                </label>
+                <input type="number" class="form-input sumatif-count-input" data-type="${t.key}" 
+                  min="1" max="50" value="${(book.sumatifConfig || {}).questionCount?.[t.key] || 5}"
+                  style="width: 70px; padding: 6px 8px; text-align: center;" />
+                <span style="font-size: var(--fs-xs); color: var(--text-tertiary);">soal</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-pg-options">Opsi PG (A-...)</label>
+            <select class="form-select" id="input-pg-options" style="margin-bottom: var(--space-md);">
+              <option value="3" ${(book.sumatifConfig || {}).pgOptionCount === 3 ? 'selected' : ''}>3 Opsi (A-C)</option>
+              <option value="4" ${(book.sumatifConfig || {}).pgOptionCount === 4 || !(book.sumatifConfig || {}).pgOptionCount ? 'selected' : ''}>4 Opsi (A-D)</option>
+              <option value="5" ${(book.sumatifConfig || {}).pgOptionCount === 5 ? 'selected' : ''}>5 Opsi (A-E)</option>
+            </select>
+            <label class="form-label">Level Kognitif</label>
+            <div id="difficulty-level-grid">
+              ${[
+                { value: 'mudah', label: 'C1-C2 Dasar', icon: '🟢' },
+                { value: 'sedang', label: 'C3-C4 Sedang', icon: '🟡' },
+                { value: 'hots', label: 'C4-C6 HOTS', icon: '🔴' },
+              ].map(d => `
+                <label class="checkbox-item">
+                  <input type="radio" name="difficulty-level" value="${d.value}" 
+                    ${(book.sumatifConfig || {}).difficultyLevel === d.value || (!(book.sumatifConfig || {}).difficultyLevel && d.value === 'sedang') ? 'checked' : ''} />
+                  <span>${d.icon} ${d.label}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== MODEL PEMBELAJARAN (Phase 5) ====== -->
+      <div class="card" style="margin-bottom: var(--space-lg);" id="model-pembelajaran-card">
+        <div class="card-header">
+          <h3 class="card-title">🧪 Model/Metode Pembelajaran</h3>
+          <span class="badge badge-green">Opsional</span>
+        </div>
+        <p class="form-hint" style="margin-bottom: var(--space-md);">Pilih 1-3 model. AI akan menyesuaikan langkah pembelajaran dan asesmen.</p>
+        <div class="school-level-grid" id="model-pembelajaran-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+          ${[
+            { value: 'pbl', icon: '🔬', label: 'Problem Based Learning' },
+            { value: 'pjbl', icon: '📐', label: 'Project Based Learning' },
+            { value: 'discovery', icon: '🔍', label: 'Discovery Learning' },
+            { value: 'inquiry', icon: '❓', label: 'Inquiry Based Learning' },
+            { value: 'cooperative', icon: '🤝', label: 'Cooperative Learning' },
+            { value: 'direct', icon: '📚', label: 'Direct Instruction' },
+            { value: 'differentiated', icon: '🎯', label: 'Differentiated Instruction' },
+          ].map(m => `
+            <label class="school-level-card ${(book.modelPembelajaran || []).includes(m.value) ? 'active' : ''}" style="padding: 10px;">
+              <input type="checkbox" name="model-pembelajaran" value="${m.value}" 
+                ${(book.modelPembelajaran || []).includes(m.value) ? 'checked' : ''} hidden />
+              <div class="school-level-icon">${m.icon}</div>
+              <div class="school-level-title" style="font-size: 0.75rem;">${m.label}</div>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+
       <!-- School Level -->
       <div class="card" style="margin-bottom: var(--space-lg);">
         <div class="card-header">
@@ -473,6 +622,57 @@ export default {
 
     // Generate distribusi
     document.getElementById('btn-generate-distribusi')?.addEventListener('click', () => this.handleGenerateDistribusi());
+
+    // ====== JENJANG AUTO-SET JP DURATION (Phase 1) ======
+    document.querySelectorAll('input[name="jenjang"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        document.querySelectorAll('#jenjang-grid .school-level-card').forEach(c => c.classList.remove('active'));
+        radio.closest('.school-level-card').classList.add('active');
+        // Auto-set JP duration based on level
+        const jpMap = { 'SD': 30, 'SMP': 40, 'SMA': 45, 'SMK': 45, 'MA': 45 };
+        const durasiJP = jpMap[radio.value] || 40;
+        const slider = document.getElementById('input-durasi-jp');
+        if (slider) { slider.value = durasiJP; }
+        const label = document.getElementById('durasi-jp-value');
+        if (label) label.textContent = durasiJP;
+        this.updateTotalMenit();
+      });
+    });
+
+    // ====== ALOKASI WAKTU SLIDERS (Phase 2) ======
+    ['input-durasi-jp', 'input-jp-per-pertemuan', 'input-jp-per-minggu'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', (e) => {
+        const labelId = id.replace('input-', '') + '-value';
+        const label = document.getElementById(labelId);
+        if (label) label.textContent = e.target.value;
+        this.updateTotalMenit();
+      });
+    });
+
+    // ====== MODEL PEMBELAJARAN TOGGLE (Phase 5) ======
+    document.querySelectorAll('#model-pembelajaran-grid .school-level-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const cb = card.querySelector('input[type="checkbox"]');
+        cb.checked = !cb.checked;
+        card.classList.toggle('active', cb.checked);
+        // Limit to 3
+        const checked = document.querySelectorAll('#model-pembelajaran-grid input[type="checkbox"]:checked');
+        if (checked.length > 3) {
+          cb.checked = false;
+          card.classList.remove('active');
+          showToast('Maksimal 3 model pembelajaran.', 'warning');
+        }
+      });
+    });
+  },
+
+  // ====== HELPER: Update total menit display ======
+  updateTotalMenit() {
+    const durasiJP = parseInt(document.getElementById('input-durasi-jp')?.value) || 40;
+    const jpPerPertemuan = parseInt(document.getElementById('input-jp-per-pertemuan')?.value) || 2;
+    const total = durasiJP * jpPerPertemuan;
+    const display = document.getElementById('total-menit-display');
+    if (display) display.textContent = `${total} menit`;
   },
 
   // ====== CP SCANNING HANDLER ======
@@ -724,6 +924,39 @@ export default {
     state.set('book.chapterLength', document.getElementById('input-length')?.value || 'sedang');
     state.set('book.referenceText', document.getElementById('input-reference')?.value || '');
     
+    // Jenjang & Semester (Phase 1)
+    state.set('book.jenjang', document.querySelector('input[name="jenjang"]:checked')?.value || '');
+    state.set('book.semester', document.getElementById('input-semester')?.value || '1');
+    state.set('book.tahunAjaran', document.getElementById('input-tahun-ajaran')?.value || '');
+
+    // Alokasi Waktu (Phase 2)
+    state.set('book.alokasiWaktu', {
+      durasiJP: parseInt(document.getElementById('input-durasi-jp')?.value) || 40,
+      jpPerPertemuan: parseInt(document.getElementById('input-jp-per-pertemuan')?.value) || 2,
+      jpPerMinggu: parseInt(document.getElementById('input-jp-per-minggu')?.value) || 4,
+      mingguEfektif: 18,
+    });
+
+    // Sumatif Config (Phase 3)
+    const enabledTypes = {};
+    const questionCount = {};
+    document.querySelectorAll('.sumatif-type-toggle').forEach(cb => {
+      enabledTypes[cb.dataset.type] = cb.checked;
+    });
+    document.querySelectorAll('.sumatif-count-input').forEach(input => {
+      questionCount[input.dataset.type] = parseInt(input.value) || 5;
+    });
+    state.set('book.sumatifConfig', {
+      enabledTypes,
+      questionCount,
+      pgOptionCount: parseInt(document.getElementById('input-pg-options')?.value) || 4,
+      difficultyLevel: document.querySelector('input[name="difficulty-level"]:checked')?.value || 'sedang',
+    });
+
+    // Model Pembelajaran (Phase 5)
+    const selectedModels = Array.from(document.querySelectorAll('input[name="model-pembelajaran"]:checked')).map(cb => cb.value);
+    state.set('book.modelPembelajaran', selectedModels);
+
     // Modul ajar settings
     const modulMode = document.querySelector('input[name="modul-ajar-mode"]:checked')?.value || null;
     state.set('book.modulAjarMode', modulMode || null);

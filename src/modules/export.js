@@ -245,7 +245,8 @@ export default {
       const outline = state.get('outline');
       const content = state.get('content');
       const exportSettings = state.get('exportSettings');
-      const filename = await buildAndDownload(book, outline, content, exportSettings);
+      const profile = state.get('profile') || {};
+      const filename = await buildAndDownload(book, outline, content, exportSettings, profile);
       showToast(`Dokumen berhasil diunduh: "${filename}" 🎉`, 'success');
     } catch (err) {
       console.error('Export error:', err);

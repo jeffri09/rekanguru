@@ -150,6 +150,81 @@ function formatDistribusiForPrompt(distribusi) {
   return text;
 }
 
+/**
+ * Format alokasi waktu for prompt injection (Phase 2)
+ */
+function formatAlokasiForPrompt(book) {
+  const a = book.alokasiWaktu || {};
+  const durasiJP = a.durasiJP || 40;
+  const jpPerPertemuan = a.jpPerPertemuan || 2;
+  const totalMenit = jpPerPertemuan * durasiJP;
+  return `\nALOKASI WAKTU (SANGAT PENTING untuk estimasi menit per aktivitas):
+- Durasi per JP: ${durasiJP} menit
+- JP per Pertemuan: ${jpPerPertemuan} JP = ${totalMenit} menit total
+- Setiap langkah pembelajaran HARUS memiliki estimasi menit yang tepat
+- Total estimasi menit semua aktivitas HARUS = ${totalMenit} menit
+- Distribusi yang disarankan: Pendahuluan (${Math.round(totalMenit * 0.12)} menit), Inti (${Math.round(totalMenit * 0.75)} menit), Penutup (${Math.round(totalMenit * 0.13)} menit)\n`;
+}
+
+/**
+ * Format sumatif config for prompt injection (Phase 3)
+ */
+function formatSumatifConfigForPrompt(sumatifConfig) {
+  if (!sumatifConfig) return '';
+  const sc = sumatifConfig;
+  const types = [];
+  if (sc.enabledTypes?.pilihan_ganda) types.push(`${sc.questionCount?.pilihan_ganda || 10} soal Pilihan Ganda (${sc.pgOptionCount || 4} opsi)`);
+  if (sc.enabledTypes?.isian_singkat) types.push(`${sc.questionCount?.isian_singkat || 5} soal Isian Singkat`);
+  if (sc.enabledTypes?.esai) types.push(`${sc.questionCount?.esai || 3} soal Esai/Uraian`);
+  if (sc.enabledTypes?.mencocokkan) types.push(`${sc.questionCount?.mencocokkan || 5} pasangan Mencocokkan`);
+  
+  const levelMap = { 'mudah': 'C1-C2 (Mengingat & Memahami)', 'sedang': 'C3-C4 (Menerapkan & Menganalisis)', 'hots': 'C4-C6 (Menganalisis, Mengevaluasi & Mencipta)' };
+  const level = levelMap[sc.difficultyLevel] || levelMap['sedang'];
+  
+  return `\nKOMPOSISI SOAL SUMATIF (Dicustom oleh user — HARUS DIIKUTI):
+${types.map(t => `  • ${t}`).join('\n')}
+  Level Kognitif: ${level}\n`;
+}
+
+/**
+ * Format model pembelajaran for prompt injection (Phase 5)
+ */
+function formatModelPembelajaranForPrompt(models) {
+  if (!models || models.length === 0) return '';
+  const labels = {
+    pbl: 'Problem Based Learning (PBL)',
+    pjbl: 'Project Based Learning (PjBL)',
+    discovery: 'Discovery Learning',
+    inquiry: 'Inquiry Based Learning',
+    cooperative: 'Cooperative Learning',
+    direct: 'Direct Instruction',
+    differentiated: 'Differentiated Instruction',
+  };
+  const selected = models.map(m => labels[m] || m).join(', ');
+  return `\nMODEL PEMBELAJARAN YANG DIPILIH:
+${selected}
+INSTRUKSI: Sesuaikan SELURUH langkah pembelajaran, aktivitas siswa, dan asesmen formatif sesuai model di atas. Sintaks model harus terlihat jelas pada kegiatan inti.\n`;
+}
+
+/**
+ * Gaya bahasa ramah awam instruction (Phase 4)
+ */
+const GAYA_BAHASA_INSTRUCTION = `
+GAYA BAHASA (SANGAT PENTING — WAJIB DIIKUTI):
+1. Gunakan bahasa yang MUDAH DIPAHAMI oleh siapapun, termasuk guru pengganti/piket
+   yang TIDAK menguasai mata pelajaran ini.
+2. Setiap langkah pembelajaran harus ditulis SEDETAIL mungkin sehingga orang awam
+   pun bisa mengikutinya TANPA bimbingan tambahan.
+3. Hindari jargon teknis tanpa penjelasan. Jika harus menggunakan istilah teknis,
+   SERTAKAN penjelasan singkat dalam kurung.
+4. Tulis instruksi kegiatan seperti RESEP MASAK — langkah demi langkah, jelas,
+   terukur, dan TIDAK membutuhkan interpretasi.
+5. Dokumen ini harus bisa menjadi PANDUAN MANDIRI yang berfungsi bahkan tanpa
+   kehadiran guru utama.
+6. JANGAN menggunakan gaya bahasa akademis yang kaku. Gunakan bahasa semi-formal
+   yang mudah dicerna tapi tetap profesional.
+`;
+
 // ============================================================
 // 🔬 CP SCANNING PROMPT
 // ============================================================
@@ -326,6 +401,11 @@ Setiap pertemuan HARUS menjadi 1 chapter terpisah berdasarkan distribusi yang su
 Untuk pertemuan SUMATIF, buatkan chapter berisi: Kisi-kisi, Soal, Rubrik Penilaian.\n`;
   }
 
+  // Inject alokasi waktu, model pembelajaran, dan gaya bahasa
+  prompt += formatAlokasiForPrompt(book);
+  prompt += formatModelPembelajaranForPrompt(book.modelPembelajaran);
+  prompt += GAYA_BAHASA_INSTRUCTION;
+
   prompt += `
 CHAIN OF THOUGHT (CoT) & TREE OF THOUGHTS (ToT):
 Berpikirlah selangkah demi selangkah:
@@ -414,11 +494,13 @@ export function chapterPrompt(book, chapter, chapterIndex, prevSummary, totalCha
     const meetingData = book.distribusiPertemuan[chapterIndex];
     if (meetingData) {
       if (meetingData.type === 'sumatif') {
+        const sumatifConfigText = formatSumatifConfigForPrompt(book.sumatifConfig);
         meetingContext = `\n🔴 INI ADALAH PERTEMUAN SUMATIF HARIAN (Pertemuan ${meetingData.pertemuan})
 Tugas: Buatkan instrumen sumatif harian lengkap yang mengevaluasi materi dari pertemuan sebelumnya.
+${sumatifConfigText}
 Isi Wajib:
 1. Kisi-kisi soal (tabel: No, Indikator, Level Kognitif, Bentuk Soal, No Soal)
-2. Soal lengkap (minimal 10-15 soal campuran: PG, isian singkat, esai)
+2. Soal lengkap sesuai KOMPOSISI di atas (jangan lebih, jangan kurang!)
 3. Kunci jawaban & pedoman penskoran
 4. Rubrik penilaian (tabel: Skor, Deskriptor)
 5. Tindak lanjut (pengayaan & remidial)
@@ -478,12 +560,18 @@ SELF-CORRECTION & REFLEXION (Saat menulis):
 2. Gunakan gaya bahasa naskah dinas pendidikan formal yang siap cetak.
 3. BUAT SANGAT REALISTIS. Gunakan contoh nama kegiatan konkret, estimasi menit, rubrik nilai asli, bukan sekadar teori.
 ${book.cpScanned ? '4. SEMUA konten HARUS merujuk ke CP yang sudah diberikan. Jangan membuat CP baru.' : ''}
+5. Gunakan GAYA BAHASA RAMAH AWAM — tulis langkah pembelajaran seperti resep masak, bukan jurnal akademis.
 
 META-PROMPTING DONT's:
 1. JANGAN mendaur ulang judul bagian terus menerus. Langsung masuk ke konten (Markdown h2/h3).
 2. Jika butuh data matriks (seperti ATP / Promes / Rubrik), FORMAT OTOMATIS menggunakan Tabel Markdown agar sangat rapi.
 3. JANGAN buat pengantar generik/kesimpulan penutup. Penulisan ini adalah satu komponen dari dokumen raksasa utuh. Langsung serang inti materi "${chapter.title}".
 `;
+
+  // Inject alokasi, model pembelajaran, gaya bahasa
+  prompt += formatAlokasiForPrompt(book);
+  prompt += formatModelPembelajaranForPrompt(book.modelPembelajaran);
+  prompt += GAYA_BAHASA_INSTRUCTION;
 
   return prompt;
 }

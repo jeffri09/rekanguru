@@ -16,6 +16,9 @@ const initialState = {
     docTypes: ['modul_ajar'],
     subject: '',
     classPhase: '',
+    jenjang: '',           // 'SD' | 'SMP' | 'SMA' | 'SMK' | 'MA'
+    semester: '1',         // '1' | '2'
+    tahunAjaran: '',       // e.g. '2025/2026'
     schoolLevel: 'kota', // 'kota' | 'pinggiran' | 'pelosok'
     topic: '',
     description: '',
@@ -32,6 +35,35 @@ const initialState = {
     jumlahSumatif: 0,         // 0-6 sumatif slots
     sumatifPositions: [],     // Custom positions or auto-generated, e.g. [3,6,9,12]
     distribusiPertemuan: [],  // Array of { pertemuan, type:'cp'|'sumatif', cpIndex, cpTitle, details }
+
+    // Alokasi Waktu
+    alokasiWaktu: {
+      durasiJP: 40,           // menit per JP (auto dari jenjang: SD=30, SMP=40, SMA=45)
+      jpPerPertemuan: 2,       // JP per pertemuan
+      jpPerMinggu: 4,          // JP per minggu
+      mingguEfektif: 18,       // minggu efektif per semester
+    },
+
+    // Sumatif Config (untuk modul ajar inline sumatif)
+    sumatifConfig: {
+      enabledTypes: {
+        pilihan_ganda: true,
+        isian_singkat: true,
+        esai: false,
+        mencocokkan: false,
+      },
+      questionCount: {
+        pilihan_ganda: 10,
+        isian_singkat: 5,
+        esai: 3,
+        mencocokkan: 5,
+      },
+      pgOptionCount: 4,
+      difficultyLevel: 'sedang',  // 'mudah' | 'sedang' | 'hots'
+    },
+
+    // Model Pembelajaran
+    modelPembelajaran: [],  // ['pbl', 'pjbl', 'discovery', 'inquiry', ...]
   },
 
   // Outline
@@ -45,10 +77,27 @@ const initialState = {
   // Settings
   settings: {
     apiProvider: 'gemini',
+    enableGemini: true,
+    enableQwen: false,
+    autoFallback: false,     // jangan auto-fallback, user pilih sendiri
     geminiKey: '',  // Isi di ⚙️ Settings — jangan hardcode di sini!
     qwenKey: '',    // Isi di ⚙️ Settings
-    geminiModel: 'gemini-3.1-flash-lite-preview',
+    geminiModel: 'gemini-2.5-flash-lite',
     qwenModel: 'qvq-max-2025-03-25',
+  },
+
+  // Profil Guru & Sekolah (persisten di localStorage)
+  profile: {
+    namaGuru: '',
+    nip: '',
+    jabatan: 'Guru Mata Pelajaran',
+    namaSekolah: '',
+    npsn: '',
+    alamatSekolah: '',
+    kabupatenKota: '',
+    provinsi: '',
+    namaKepalaSekolah: '',
+    nipKepalaSekolah: '',
   },
 
   // Export settings

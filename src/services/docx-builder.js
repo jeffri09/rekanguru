@@ -252,71 +252,178 @@ function parseInlineFormatting(text, settings, forceBold = false) {
 /**
  * Create cover page section
  */
-function createCoverPage(book, settings) {
+function createCoverPage(book, settings, profile) {
   const mainTitle = getTitleStr(book);
   const subTitle = book.targetRole === 'guru' ? 
     (book.subject || '') + (book.classPhase ? ' (' + book.classPhase + ')' : '') : 
     (book.description || '');
+  const p = profile || {};
+  const semesterLabel = book.semester === '2' ? 'Semester 2 (Genap)' : 'Semester 1 (Ganjil)';
+  const tahunAjaran = book.tahunAjaran || `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`;
 
-  return [
-    new Paragraph({ spacing: { before: 4000 } }),
+  const elements = [];
+
+  // School Name (Kop)
+  if (p.namaSekolah) {
+    elements.push(
+      new Paragraph({ spacing: { before: 1200 } }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 100 },
+        children: [new TextRun({ text: p.namaSekolah.toUpperCase(), font: settings.headingFont || 'Arial', size: 32, bold: true })],
+      }),
+    );
+    if (p.alamatSekolah) {
+      elements.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 100 },
+        children: [new TextRun({ text: p.alamatSekolah, font: settings.bodyFont || 'Times New Roman', size: 20, color: '555555' })],
+      }));
+    }
+    if (p.kabupatenKota || p.provinsi) {
+      elements.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },
+        children: [new TextRun({ text: [p.kabupatenKota, p.provinsi].filter(Boolean).join(', '), font: settings.bodyFont || 'Times New Roman', size: 20, color: '555555' })],
+      }));
+    }
+    // Separator line
+    elements.push(new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 600 },
+      children: [new TextRun({ text: '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', size: 20 })],
+    }));
+  } else {
+    elements.push(new Paragraph({ spacing: { before: 3000 } }));
+  }
+
+  // Main Title
+  elements.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 400 },
-      children: [
-        new TextRun({
-          text: mainTitle,
-          font: settings.headingFont || 'Arial',
-          size: 48,
-          bold: true,
-          color: '000000',
-        }),
-      ],
+      children: [new TextRun({ text: mainTitle.toUpperCase(), font: settings.headingFont || 'Arial', size: 48, bold: true, color: '000000' })],
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 200 },
-      children: [
-        new TextRun({
-          text: '━━━━━━━━━━━━━━━━━━━━━━',
-          size: 24,
-        }),
-      ],
+      children: [new TextRun({ text: '━━━━━━━━━━━━━━━━━━━━━━', size: 24 })],
     }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+      children: [new TextRun({ text: subTitle, font: settings.bodyFont || 'Times New Roman', size: 28, italics: true, color: '333333' })],
+    }),
+  );
+
+  // Semester & Tahun Ajaran
+  elements.push(new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 600 },
+    children: [new TextRun({ text: `${semesterLabel} — Tahun Ajaran ${tahunAjaran}`, font: settings.bodyFont || 'Times New Roman', size: 24, color: '333333' })],
+  }));
+
+  // Disusun Oleh
+  if (p.namaGuru) {
+    elements.push(
+      new Paragraph({ spacing: { before: 1200 } }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 100 },
+        children: [new TextRun({ text: 'Disusun oleh:', font: settings.bodyFont || 'Times New Roman', size: 24, color: '555555' })],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 100 },
+        children: [new TextRun({ text: p.namaGuru, font: settings.bodyFont || 'Times New Roman', size: 28, bold: true })],
+      }),
+    );
+    if (p.nip) {
+      elements.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },
+        children: [new TextRun({ text: `NIP. ${p.nip}`, font: settings.bodyFont || 'Times New Roman', size: 22, color: '555555' })],
+      }));
+    }
+  }
+
+  // Footer info
+  elements.push(
+    new Paragraph({ spacing: { before: 1200 } }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 100 },
+      children: [new TextRun({ text: p.namaSekolah || 'Kurikulum Merdeka Terintegrasi AI', font: settings.headingFont || 'Arial', size: 24, color: '000000' })],
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: new Date().getFullYear().toString(), font: settings.bodyFont || 'Times New Roman', size: 24 })],
+    }),
+    new Paragraph({ children: [new PageBreak()] }),
+  );
+
+  return elements;
+}
+
+/**
+ * Create Halaman Pengesahan (Approval Page)
+ */
+function createPengesahanPage(book, settings, profile) {
+  const p = profile || {};
+  const tahunAjaran = book.tahunAjaran || `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`;
+  const semesterLabel = book.semester === '2' ? 'Semester 2 (Genap)' : 'Semester 1 (Ganjil)';
+  const lokasi = p.kabupatenKota || '.....................';
+
+  return [
+    new Paragraph({ spacing: { before: 1200 } }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 600 },
-      children: [
-        new TextRun({
-          text: subTitle,
-          font: settings.bodyFont || 'Times New Roman',
-          size: 28,
-          italics: true,
-          color: '333333',
-        }),
-      ],
-    }),
-    new Paragraph({ spacing: { before: 2000 } }),
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
-      children: [
-        new TextRun({
-          text: `Dokumen Kurikulum Merdeka Terintegrasi AI`,
-          font: settings.headingFont || 'Arial',
-          size: 24,
-          color: '000000',
-        }),
-      ],
+      children: [new TextRun({ text: 'LEMBAR PENGESAHAN', font: settings.headingFont || 'Arial', size: 32, bold: true })],
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
+      spacing: { after: 400 },
+      children: [new TextRun({ text: `Dokumen ini telah disahkan dan disetujui untuk digunakan pada ${semesterLabel}, Tahun Ajaran ${tahunAjaran}.`, font: settings.bodyFont || 'Times New Roman', size: 24 })],
+    }),
+    new Paragraph({ spacing: { before: 800 } }),
+    // Two-column signature layout using tabs
+    new Paragraph({
+      spacing: { after: 100 },
       children: [
-        new TextRun({
-          text: new Date().getFullYear().toString(),
-          font: settings.bodyFont || 'Times New Roman',
-          size: 24,
-        }),
+        new TextRun({ text: `${lokasi}, ........................ ${new Date().getFullYear()}`, font: settings.bodyFont || 'Times New Roman', size: 22 }),
+      ],
+    }),
+    new Paragraph({ spacing: { before: 400 } }),
+    new Paragraph({
+      spacing: { after: 100 },
+      children: [
+        new TextRun({ text: 'Guru Mata Pelajaran,', font: settings.bodyFont || 'Times New Roman', size: 22 }),
+        new TextRun({ text: '\t\t\t\t\tMengetahui,', font: settings.bodyFont || 'Times New Roman', size: 22 }),
+      ],
+    }),
+    new Paragraph({
+      spacing: { after: 100 },
+      children: [
+        new TextRun({ text: '', font: settings.bodyFont || 'Times New Roman', size: 22 }),
+        new TextRun({ text: '\t\t\t\t\tKepala Sekolah', font: settings.bodyFont || 'Times New Roman', size: 22 }),
+      ],
+    }),
+    new Paragraph({ spacing: { before: 1200 } }),
+    new Paragraph({
+      spacing: { after: 100 },
+      children: [
+        new TextRun({ text: p.namaGuru || '........................................', font: settings.bodyFont || 'Times New Roman', size: 22, bold: true, underline: {} }),
+        new TextRun({ text: '\t\t\t\t\t', font: settings.bodyFont || 'Times New Roman', size: 22 }),
+        new TextRun({ text: p.namaKepalaSekolah || '........................................', font: settings.bodyFont || 'Times New Roman', size: 22, bold: true, underline: {} }),
+      ],
+    }),
+    new Paragraph({
+      spacing: { after: 100 },
+      children: [
+        new TextRun({ text: p.nip ? `NIP. ${p.nip}` : 'NIP. ........................', font: settings.bodyFont || 'Times New Roman', size: 20, color: '555555' }),
+        new TextRun({ text: '\t\t\t\t\t', font: settings.bodyFont || 'Times New Roman', size: 22 }),
+        new TextRun({ text: p.nipKepalaSekolah ? `NIP. ${p.nipKepalaSekolah}` : 'NIP. ........................', font: settings.bodyFont || 'Times New Roman', size: 20, color: '555555' }),
       ],
     }),
     new Paragraph({ children: [new PageBreak()] }),
@@ -326,7 +433,7 @@ function createCoverPage(book, settings) {
 /**
  * Build and download the Word document
  */
-export async function buildAndDownload(book, outline, content, exportSettings) {
+export async function buildAndDownload(book, outline, content, exportSettings, profile) {
   const settings = exportSettings || {
     bodyFont: 'Times New Roman',
     headingFont: 'Arial',
@@ -339,7 +446,38 @@ export async function buildAndDownload(book, outline, content, exportSettings) {
     includeHeaders: true,
   };
   
+  const p = profile || {};
   const sections = [];
+
+  // Header/Footer for content pages
+  const headerText = p.namaSekolah || 'Perangkat Guru AI';
+  const docHeader = settings.includeHeaders ? {
+    default: new Header({
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.RIGHT,
+          children: [
+            new TextRun({ text: headerText, font: settings.bodyFont || 'Times New Roman', size: 18, color: '999999', italics: true }),
+          ],
+        }),
+      ],
+    }),
+  } : undefined;
+
+  const docFooter = settings.includePageNumbers ? {
+    default: new Footer({
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [
+            new TextRun({ children: [PageNumber.CURRENT], font: settings.bodyFont || 'Times New Roman', size: 18, color: '999999' }),
+            new TextRun({ text: ' / ', font: settings.bodyFont || 'Times New Roman', size: 18, color: '999999' }),
+            new TextRun({ children: [PageNumber.TOTAL_PAGES], font: settings.bodyFont || 'Times New Roman', size: 18, color: '999999' }),
+          ],
+        }),
+      ],
+    }),
+  } : undefined;
 
   // Page props for A4 size and formal margins
   const officialPageProps = {
@@ -359,7 +497,13 @@ export async function buildAndDownload(book, outline, content, exportSettings) {
   if (settings.includeCover) {
     sections.push({
       properties: { page: officialPageProps },
-      children: createCoverPage(book, settings),
+      children: createCoverPage(book, settings, p),
+    });
+
+    // Pengesahan page (after cover)
+    sections.push({
+      properties: { page: officialPageProps },
+      children: createPengesahanPage(book, settings, p),
     });
   }
 
@@ -433,44 +577,12 @@ export async function buildAndDownload(book, outline, content, exportSettings) {
     // Section headers/footers
     const sectionProps = { page: officialPageProps };
 
-    if (settings.includeHeaders) {
-      sectionProps.headers = {
-        default: new Header({
-          children: [
-            new Paragraph({
-              alignment: AlignmentType.RIGHT,
-              children: [
-                new TextRun({
-                  text: getTitleStr(book),
-                  font: settings.bodyFont || 'Times New Roman',
-                  size: 18, // 9pt
-                  italics: true,
-                  color: '888888',
-                }),
-              ],
-            }),
-          ],
-        }),
-      };
+    if (settings.includeHeaders && docHeader) {
+      sectionProps.headers = docHeader;
     }
 
-    if (settings.includePageNumbers) {
-      sectionProps.footers = {
-        default: new Footer({
-          children: [
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new TextRun({
-                  children: [PageNumber.CURRENT],
-                  font: settings.bodyFont || 'Times New Roman',
-                  size: 20, // 10pt
-                }),
-              ],
-            }),
-          ],
-        }),
-      };
+    if (settings.includePageNumbers && docFooter) {
+      sectionProps.footers = docFooter;
     }
 
     sections.push({

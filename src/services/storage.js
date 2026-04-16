@@ -87,3 +87,55 @@ export function loadAutoSave() {
 export function clearAutoSave() {
   localStorage.removeItem(AUTOSAVE_KEY);
 }
+
+// ============================================================
+// Profile & Settings Persistence
+// ============================================================
+const PROFILE_KEY = 'perangkat_guru_profile';
+const SETTINGS_KEY = 'perangkat_guru_settings';
+
+/**
+ * Save teacher/school profile (persists across projects)
+ */
+export function saveProfile(profileData) {
+  try {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profileData));
+  } catch (e) {
+    console.warn('Profile save failed:', e);
+  }
+}
+
+/**
+ * Load saved profile
+ */
+export function loadProfile() {
+  try {
+    const saved = localStorage.getItem(PROFILE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save settings (API keys, model preferences — persists across projects)
+ */
+export function saveSettings(settingsData) {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settingsData));
+  } catch (e) {
+    console.warn('Settings save failed:', e);
+  }
+}
+
+/**
+ * Load saved settings
+ */
+export function loadSettings() {
+  try {
+    const saved = localStorage.getItem(SETTINGS_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+}
