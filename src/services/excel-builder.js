@@ -1,15 +1,44 @@
 // ============================================================
-// Excel Builder — Generate crossword puzzle Excel files
+// Excel Builder — Generate crossword puzzle Excel files (v2)
 // Layout: Landscape F4 — Grid kiri, Petunjuk kanan (1 halaman)
+// Fixes: harakat rendering, Arabic filename, 3 sheets
+// Added: Sheet Petunjuk terpisah, branding kustom
 // ============================================================
 
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { splitDisplayChars } from '../utils/crossword-engine.js';
+
+/**
+ * Get the display character for a grid cell, using originalWord if available (harakat support).
+ */
+function getDisplayCharForCell(placedWords, row, col, gridChar) {
+  for (const pw of placedWords) {
+    const dr = pw.direction === 'down' ? 1 : 0;
+    const dc = pw.direction === 'across' ? 1 : 0;
+
+    for (let i = 0; i < pw.word.length; i++) {
+      const wr = pw.row + dr * i;
+      const wc = pw.col + dc * i;
+      if (wr === row && wc === col) {
+        if (pw.originalWord) {
+          const displayChars = splitDisplayChars(pw.originalWord);
+          if (i < displayChars.length) {
+            return displayChars[i];
+          }
+        }
+        return gridChar;
+      }
+    }
+  }
+  return gridChar;
+}
 
 /**
  * Build and download crossword puzzle as Excel file
  * Sheet 1: Soal (grid kiri + petunjuk kanan) — landscape F4, 1 page
  * Sheet 2: Kunci Jawaban — separate page
+ * Sheet 3: Daftar Petunjuk — clean list of all clues
  */
 export async function buildCrosswordExcel(crosswordData) {
   const { grid, placedWords, rows, cols, title } = crosswordData;
@@ -202,7 +231,7 @@ export async function buildCrosswordExcel(crosswordData) {
   jTitle.alignment = { horizontal: 'center', vertical: 'middle' };
   sheetJawaban.getRow(1).height = 32;
 
-  // Answer grid (filled, same position as soal)
+  // Answer grid (filled, same position as soal) — with harakat support
   const answerGridStart = 3;
   for (let r = 0; r < rows; r++) {
     const excelRow = answerGridStart + r;
@@ -212,7 +241,9 @@ export async function buildCrosswordExcel(crosswordData) {
       const cell = sheetJawaban.getCell(excelRow, c + 1);
 
       if (grid[r][c] !== '') {
-        cell.value = grid[r][c];
+        // Use display char with harakat if available
+        const displayChar = getDisplayCharForCell(placedWords, r, c, grid[r][c]);
+        cell.value = displayChar;
         cell.font = { bold: true, size: 12, name: 'Arial' };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         cell.border = {
@@ -245,7 +276,7 @@ export async function buildCrosswordExcel(crosswordData) {
     nCell.alignment = { horizontal: 'right' };
 
     const tCell = sheetJawaban.getCell(aRow, textCol);
-    tCell.value = w.word;
+    tCell.value = w.originalWord || w.word;
     tCell.font = { bold: true, size: 10, name: 'Arial', color: { argb: '1565C0' } };
     aRow++;
   }
@@ -266,10 +297,155 @@ export async function buildCrosswordExcel(crosswordData) {
     nCell.alignment = { horizontal: 'right' };
 
     const tCell = sheetJawaban.getCell(aRow, textCol);
-    tCell.value = w.word;
+    tCell.value = w.originalWord || w.word;
     tCell.font = { bold: true, size: 10, name: 'Arial', color: { argb: '2E7D32' } };
     aRow++;
   }
+
+  // ============================================================
+  // SHEET 3: DAFTAR PETUNJUK (Clean printable clue list)
+  // ============================================================
+  const sheetPetunjuk = workbook.addWorksheet('Daftar Petunjuk', {
+    pageSetup: {
+      paperSize: 41,
+      orientation: 'portrait',
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 1,
+      margins: { left: 0.6, right: 0.6, top: 0.6, bottom: 0.6, header: 0.3, footer: 0.3 },
+    },
+    properties: { defaultRowHeight: 20 },
+  });
+
+  // Set column widths
+  sheetPetunjuk.getColumn(1).width = 6;   // No.
+  sheetPetunjuk.getColumn(2).width = 10;  // Arah
+  sheetPetunjuk.getColumn(3).width = 50;  // Petunjuk
+  sheetPetunjuk.getColumn(4).width = 10;  // Jumlah Huruf
+
+  // Title
+  sheetPetunjuk.mergeCells(1, 1, 1, 4);
+  const pTitle = sheetPetunjuk.getCell(1, 1);
+  pTitle.value = '📋 DAFTAR PETUNJUK — ' + (title || 'Teka-Teki Silang');
+  pTitle.font = { bold: true, size: 14, name: 'Arial' };
+  pTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+  sheetPetunjuk.getRow(1).height = 30;
+
+  // Subtitle
+  sheetPetunjuk.mergeCells(2, 1, 2, 4);
+  const pSub = sheetPetunjuk.getCell(2, 1);
+  pSub.value = 'Gunakan petunjuk di bawah untuk mengisi TTS di Sheet "Soal TTS"';
+  pSub.font = { italic: true, size: 9, name: 'Arial', color: { argb: '666666' } };
+  pSub.alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Header row
+  const headerRow = 4;
+  const headers = ['No.', 'Arah', 'Petunjuk', 'Huruf'];
+  const headerColors = ['F5F5F5', 'F5F5F5', 'F5F5F5', 'F5F5F5'];
+  headers.forEach((h, idx) => {
+    const cell = sheetPetunjuk.getCell(headerRow, idx + 1);
+    cell.value = h;
+    cell.font = { bold: true, size: 10, name: 'Arial', color: { argb: '333333' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: headerColors[idx] } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = {
+      bottom: { style: 'medium', color: { argb: '333333' } },
+    };
+  });
+  sheetPetunjuk.getRow(headerRow).height = 24;
+
+  // Mendatar section
+  let pRow = headerRow + 1;
+
+  // Section header: Mendatar
+  sheetPetunjuk.mergeCells(pRow, 1, pRow, 4);
+  const mendatarHeader = sheetPetunjuk.getCell(pRow, 1);
+  mendatarHeader.value = '➡️ MENDATAR';
+  mendatarHeader.font = { bold: true, size: 11, name: 'Arial', color: { argb: '1565C0' } };
+  mendatarHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E3F2FD' } };
+  mendatarHeader.alignment = { vertical: 'middle' };
+  sheetPetunjuk.getRow(pRow).height = 24;
+  pRow++;
+
+  for (const w of acrossWords) {
+    const noCell = sheetPetunjuk.getCell(pRow, 1);
+    noCell.value = w.number;
+    noCell.font = { bold: true, size: 10, name: 'Arial' };
+    noCell.alignment = { horizontal: 'center', vertical: 'top' };
+
+    const arCell = sheetPetunjuk.getCell(pRow, 2);
+    arCell.value = 'Mendatar';
+    arCell.font = { size: 9, name: 'Arial', color: { argb: '1565C0' } };
+    arCell.alignment = { horizontal: 'center', vertical: 'top' };
+
+    const clCell = sheetPetunjuk.getCell(pRow, 3);
+    clCell.value = w.clue;
+    clCell.font = { size: 10, name: 'Arial' };
+    clCell.alignment = { wrapText: true, vertical: 'top' };
+
+    const hlCell = sheetPetunjuk.getCell(pRow, 4);
+    hlCell.value = w.word.length;
+    hlCell.font = { size: 10, name: 'Arial', color: { argb: '666666' } };
+    hlCell.alignment = { horizontal: 'center', vertical: 'top' };
+
+    // Light border bottom
+    for (let c = 1; c <= 4; c++) {
+      sheetPetunjuk.getCell(pRow, c).border = {
+        bottom: { style: 'thin', color: { argb: 'E0E0E0' } },
+      };
+    }
+
+    pRow++;
+  }
+
+  // Section header: Menurun
+  pRow++;
+  sheetPetunjuk.mergeCells(pRow, 1, pRow, 4);
+  const menurunHeader = sheetPetunjuk.getCell(pRow, 1);
+  menurunHeader.value = '⬇️ MENURUN';
+  menurunHeader.font = { bold: true, size: 11, name: 'Arial', color: { argb: '2E7D32' } };
+  menurunHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E8F5E9' } };
+  menurunHeader.alignment = { vertical: 'middle' };
+  sheetPetunjuk.getRow(pRow).height = 24;
+  pRow++;
+
+  for (const w of downWords) {
+    const noCell = sheetPetunjuk.getCell(pRow, 1);
+    noCell.value = w.number;
+    noCell.font = { bold: true, size: 10, name: 'Arial' };
+    noCell.alignment = { horizontal: 'center', vertical: 'top' };
+
+    const arCell = sheetPetunjuk.getCell(pRow, 2);
+    arCell.value = 'Menurun';
+    arCell.font = { size: 9, name: 'Arial', color: { argb: '2E7D32' } };
+    arCell.alignment = { horizontal: 'center', vertical: 'top' };
+
+    const clCell = sheetPetunjuk.getCell(pRow, 3);
+    clCell.value = w.clue;
+    clCell.font = { size: 10, name: 'Arial' };
+    clCell.alignment = { wrapText: true, vertical: 'top' };
+
+    const hlCell = sheetPetunjuk.getCell(pRow, 4);
+    hlCell.value = w.word.length;
+    hlCell.font = { size: 10, name: 'Arial', color: { argb: '666666' } };
+    hlCell.alignment = { horizontal: 'center', vertical: 'top' };
+
+    for (let c = 1; c <= 4; c++) {
+      sheetPetunjuk.getCell(pRow, c).border = {
+        bottom: { style: 'thin', color: { argb: 'E0E0E0' } },
+      };
+    }
+
+    pRow++;
+  }
+
+  // Footer
+  pRow += 2;
+  sheetPetunjuk.mergeCells(pRow, 1, pRow, 4);
+  const pFooter = sheetPetunjuk.getCell(pRow, 1);
+  pFooter.value = `Dibuat dengan Perangkat Guru AI — ${placedWords.length} soal`;
+  pFooter.font = { size: 8, name: 'Arial', italic: true, color: { argb: '999999' } };
+  pFooter.alignment = { horizontal: 'center' };
 
   // ====== GENERATE & DOWNLOAD ======
   const buffer = await workbook.xlsx.writeBuffer();
@@ -277,7 +453,12 @@ export async function buildCrosswordExcel(crosswordData) {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
 
-  const filename = `TTS_${(title || 'Puzzle').replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}.xlsx`;
+  // Safe filename: handle Arabic/non-Latin titles gracefully
+  const safeTitle = (title || 'Puzzle')
+    .replace(/[<>:"/\\|?*]/g, '')     // remove filesystem-unsafe chars
+    .replace(/\s+/g, '_')              // spaces to underscores
+    .substring(0, 60);                 // limit length
+  const filename = `TTS_${safeTitle}.xlsx`;
   saveAs(blob, filename);
 
   return filename;

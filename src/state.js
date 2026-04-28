@@ -129,11 +129,10 @@ const initialState = {
     topic: '',
     difficulty: 'sedang', // 'sangat_mudah' | 'mudah' | 'sedang' | 'sulit' | 'sangat_sulit'
     wordCount: 10,
-    clueLang: 'id',    // 'id' | 'en' | 'ar'
-    answerLang: 'id',  // 'id' | 'en' | 'ar'
-    words: [], // { word, clue, direction, row, col, number }
-    grid: null,
-    isGenerating: false,
+    clueLang: 'id',    // 'id' | 'en' | 'ar' | 'ar_h'
+    answerLang: 'id',  // 'id' | 'en' | 'ar' | 'ar_h'
+    jenjang: 'umum',   // 'sd' | 'smp' | 'sma' | 'smk' | 'ma' | 'umum'
+    lastResult: null,  // Persisted crossword result for navigation
   },
 
   // Soal Sumatif state

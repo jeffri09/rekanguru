@@ -1,6 +1,7 @@
 // ============================================================
-// Crossword Prompt — AI generates words + clues for TTS
+// Crossword Prompt — AI generates words + clues for TTS (v2)
 // Supports: ID, EN, AR (tanpa harakat), AR_H (dengan harakat)
+// Added: word length constraints, grade level awareness
 // ============================================================
 
 const difficultyConfig = {
@@ -39,11 +40,54 @@ JANGAN gunakan spasi, angka, atau tanda baca selain harakat.`,
   },
 };
 
-export function crosswordPrompt(topic, difficulty, wordCount, clueLang = 'id', answerLang = 'id') {
+/**
+ * Grade level config — adjusts vocabulary and complexity expectations
+ */
+const gradeLevelConfig = {
+  sd: {
+    name: 'SD (Sekolah Dasar)',
+    wordRule: 'Gunakan kosakata yang sederhana dan familiar untuk anak SD. Panjang kata ideal 3-8 huruf. Hindari istilah teknis yang terlalu kompleks.',
+    minLen: 3,
+    maxLen: 10,
+  },
+  smp: {
+    name: 'SMP (Sekolah Menengah Pertama)',
+    wordRule: 'Gunakan kosakata level SMP. Panjang kata ideal 4-12 huruf. Boleh menggunakan istilah teknis dasar sesuai mata pelajaran.',
+    minLen: 3,
+    maxLen: 14,
+  },
+  sma: {
+    name: 'SMA (Sekolah Menengah Atas)',
+    wordRule: 'Gunakan kosakata level SMA. Panjang kata ideal 4-15 huruf. Boleh menggunakan istilah teknis, ilmiah, dan akademis.',
+    minLen: 3,
+    maxLen: 16,
+  },
+  smk: {
+    name: 'SMK (Sekolah Menengah Kejuruan)',
+    wordRule: 'Gunakan kosakata level SMK. Panjang kata ideal 4-15 huruf. Fokus pada istilah praktis dan teknis sesuai jurusan.',
+    minLen: 3,
+    maxLen: 16,
+  },
+  ma: {
+    name: 'MA (Madrasah Aliyah)',
+    wordRule: 'Gunakan kosakata level MA. Panjang kata ideal 4-15 huruf. Boleh menggunakan istilah teknis, ilmiah, keagamaan, dan akademis.',
+    minLen: 3,
+    maxLen: 16,
+  },
+  umum: {
+    name: 'Umum',
+    wordRule: 'Gunakan kosakata umum. Panjang kata ideal 3-15 huruf.',
+    minLen: 3,
+    maxLen: 16,
+  },
+};
+
+export function crosswordPrompt(topic, difficulty, wordCount, clueLang = 'id', answerLang = 'id', gradeLevel = 'umum') {
   const config = difficultyConfig[difficulty] || difficultyConfig.sedang;
   const count = wordCount || 10;
   const clue = langConfig[clueLang] || langConfig.id;
   const answer = langConfig[answerLang] || langConfig.id;
+  const grade = gradeLevelConfig[gradeLevel] || gradeLevelConfig.umum;
 
   const isBilingual = clueLang !== answerLang;
 
@@ -56,6 +100,9 @@ ${topic}
 
 JUMLAH KATA/SOAL: Tepat ${count} kata
 
+JENJANG PENDIDIKAN: ${grade.name}
+${grade.wordRule}
+
 TINGKAT KESULITAN PETUNJUK:
 ${config.desc}
 
@@ -66,6 +113,10 @@ ${isBilingual ? `\n⚠️ Ini TTS BILINGUAL: petunjuk dalam ${clue.name}, jawaba
 
 ATURAN KATA JAWABAN:
 ${answer.answerRule}
+- Panjang kata MINIMUM: ${grade.minLen} huruf
+- Panjang kata MAKSIMUM: ${grade.maxLen} huruf
+- Usahakan variasi panjang kata (ada yang pendek dan panjang)
+- Usahakan variasi huruf awal agar kata-kata bisa saling bersilangan dengan baik
 
 ATURAN PETUNJUK:
 ${clue.clueRule}
@@ -83,5 +134,7 @@ FORMAT OUTPUT (JSON MURNI, TANPA teks lain):
 PENTING:
 - Buat TEPAT ${count} kata, tidak kurang tidak lebih.
 - Jawaban HANYA berisi huruf (sesuai bahasa), tanpa spasi/angka/tanda baca${answerLang === 'ar_h' ? ' (kecuali harakat)' : ''}.
+- Panjang setiap kata HARUS antara ${grade.minLen}-${grade.maxLen} huruf.
+- Variasikan huruf awal kata — JANGAN banyak kata yang mulai dengan huruf yang sama.
 - JANGAN tambahkan teks apapun di luar JSON. Langsung output JSON saja.`;
 }

@@ -1,6 +1,7 @@
 // ============================================================
-// Crossword Engine — Grid generation algorithm
+// Crossword Engine — Grid generation algorithm (v2)
 // Supports Latin (A-Z), Arabic, and Arabic with harakat
+// Features: multi-attempt retry, dynamic grid, improved scoring
 // ============================================================
 
 // Harakat unicode range
@@ -38,17 +39,19 @@ export function splitDisplayChars(originalWord) {
 }
 
 /**
- * Generate a crossword grid from a list of words.
+ * Full pipeline: generate crossword grid with multi-attempt optimization.
+ * Tries multiple word orderings and picks the best result.
+ *
  * @param {Array<{word: string, clue: string}>} wordList
- * @returns {{ grid: string[][], placedWords: Array, size: number }}
+ * @returns {{ grid: string[][], placedWords: Array, rows: number, cols: number, totalPlaced: number, totalAttempted: number }}
  */
-export function generateCrosswordGrid(wordList) {
+export function buildCrossword(wordList) {
   if (!wordList || wordList.length === 0) return null;
 
-  // Clean and sort words (longest first for better placement)
   const words = wordList
     .map(w => ({
       ...w,
+      originalWord: w.word, // keep original (may have harakat)
       word: cleanWord(w.word),
     }))
     .filter(w => w.word.length >= 2)
@@ -56,11 +59,72 @@ export function generateCrosswordGrid(wordList) {
 
   if (words.length === 0) return null;
 
-  const maxSize = 30;
+  // Dynamic grid size based on word count and total letters
+  const totalLetters = words.reduce((sum, w) => sum + w.word.length, 0);
+  const maxSize = Math.min(50, Math.max(20, Math.ceil(Math.sqrt(totalLetters * 3)) + 5));
+
+  // Multi-attempt: try several orderings, keep the best result
+  const ATTEMPTS = Math.min(8, Math.max(3, words.length));
+  let bestResult = null;
+  let bestScore = -1;
+
+  for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+    const orderedWords = attempt === 0
+      ? [...words] // first attempt: longest-first (default)
+      : shuffleWithLongestFirst(words, attempt);
+
+    const result = attemptBuild(orderedWords, maxSize);
+    if (!result) continue;
+
+    // Score: placed count (primary) + density (secondary) + balance (tertiary)
+    const density = result.totalPlaced / (result.rows * result.cols + 1);
+    const acrossCount = result.placedWords.filter(w => w.direction === 'across').length;
+    const downCount = result.placedWords.filter(w => w.direction === 'down').length;
+    const balance = 1 - Math.abs(acrossCount - downCount) / (result.totalPlaced + 1);
+    const score = result.totalPlaced * 100 + density * 50 + balance * 30;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestResult = result;
+    }
+
+    // If all words placed, no need to try more
+    if (result.totalPlaced === words.length) break;
+  }
+
+  if (!bestResult) return null;
+
+  bestResult.totalAttempted = words.length;
+  return bestResult;
+}
+
+/**
+ * Shuffle words with longest-first bias but randomized after top words.
+ */
+function shuffleWithLongestFirst(words, seed) {
+  const sorted = [...words];
+
+  // Keep top 2 longest words in place, shuffle the rest
+  const head = sorted.slice(0, 2);
+  const tail = sorted.slice(2);
+
+  // Simple deterministic shuffle based on seed
+  for (let i = tail.length - 1; i > 0; i--) {
+    const j = (seed * 31 + i * 17) % (i + 1);
+    [tail[i], tail[j]] = [tail[j], tail[i]];
+  }
+
+  return [...head, ...tail];
+}
+
+/**
+ * Single attempt to build a crossword grid.
+ */
+function attemptBuild(words, maxSize) {
   const grid = Array.from({ length: maxSize }, () => Array(maxSize).fill(''));
   const placedWords = [];
 
-  // Place the first word horizontally in the center
+  // Place first word horizontally in the center
   const firstWord = words[0];
   const startRow = Math.floor(maxSize / 2);
   const startCol = Math.floor((maxSize - firstWord.word.length) / 2);
@@ -68,35 +132,67 @@ export function generateCrosswordGrid(wordList) {
   for (let i = 0; i < firstWord.word.length; i++) {
     grid[startRow][startCol + i] = firstWord.word[i];
   }
+  placedWords.push({ ...firstWord, row: startRow, col: startCol, direction: 'across', number: 0 });
 
-  placedWords.push({
-    ...firstWord,
-    row: startRow,
-    col: startCol,
-    direction: 'across', // mendatar
-    number: 0,
-  });
-
-  // Try to place remaining words
+  // Try to place remaining words (with retry for failed words)
+  const failed = [];
   for (let w = 1; w < words.length; w++) {
-    const wordObj = words[w];
-    const placed = tryPlaceWord(grid, placedWords, wordObj, maxSize);
+    const placed = tryPlaceWord(grid, placedWords, words[w], maxSize);
     if (placed) {
       placedWords.push(placed);
+    } else {
+      failed.push(words[w]);
     }
   }
 
-  // Trim grid to bounding box
-  const trimmed = trimGrid(grid, maxSize);
+  // Retry failed words (they may fit now that more words are on the grid)
+  for (const wordObj of failed) {
+    const placed = tryPlaceWord(grid, placedWords, wordObj, maxSize);
+    if (placed) placedWords.push(placed);
+  }
+
+  if (placedWords.length < 2) return null;
+
+  // Find bounding box
+  let minRow = maxSize, maxRow = 0, minCol = maxSize, maxCol = 0;
+  for (let r = 0; r < maxSize; r++) {
+    for (let c = 0; c < maxSize; c++) {
+      if (grid[r][c] !== '') {
+        minRow = Math.min(minRow, r);
+        maxRow = Math.max(maxRow, r);
+        minCol = Math.min(minCol, c);
+        maxCol = Math.max(maxCol, c);
+      }
+    }
+  }
+
+  const rows = maxRow - minRow + 1;
+  const cols = maxCol - minCol + 1;
+
+  // Build trimmed grid
+  const trimmedGrid = [];
+  for (let r = 0; r < rows; r++) {
+    trimmedGrid[r] = [];
+    for (let c = 0; c < cols; c++) {
+      trimmedGrid[r][c] = grid[minRow + r][minCol + c];
+    }
+  }
+
+  // Adjust placed word coordinates
+  for (const pw of placedWords) {
+    pw.row -= minRow;
+    pw.col -= minCol;
+  }
 
   // Assign numbers
-  assignNumbers(trimmed.placedWords);
+  assignNumbers(placedWords);
 
   return {
-    grid: trimmed.grid,
-    placedWords: trimmed.placedWords,
-    rows: trimmed.rows,
-    cols: trimmed.cols,
+    grid: trimmedGrid,
+    placedWords,
+    rows,
+    cols,
+    totalPlaced: placedWords.length,
   };
 }
 
@@ -105,8 +201,7 @@ export function generateCrosswordGrid(wordList) {
  */
 function tryPlaceWord(grid, placedWords, wordObj, maxSize) {
   const word = wordObj.word;
-  let bestPlacement = null;
-  let bestScore = -1;
+  const candidates = [];
 
   // For each placed word, find common characters
   for (const placed of placedWords) {
@@ -118,12 +213,10 @@ function tryPlaceWord(grid, placedWords, wordObj, maxSize) {
         let row, col, direction;
 
         if (placed.direction === 'across') {
-          // Place new word going down
           direction = 'down';
           row = placed.row - wi;
           col = placed.col + pi;
         } else {
-          // Place new word going across
           direction = 'across';
           row = placed.row + pi;
           col = placed.col - wi;
@@ -131,33 +224,31 @@ function tryPlaceWord(grid, placedWords, wordObj, maxSize) {
 
         // Check if placement is valid
         if (isValidPlacement(grid, word, row, col, direction, maxSize)) {
-          // Score: prefer center, more intersections = better
-          const centerDist = Math.abs(row - maxSize / 2) + Math.abs(col - maxSize / 2);
           const intersections = countIntersections(grid, word, row, col, direction, maxSize);
-          const score = intersections * 10 - centerDist;
+          const centerDist = Math.abs(row - maxSize / 2) + Math.abs(col - maxSize / 2);
+          const score = intersections * 15 - centerDist;
 
-          if (score > bestScore) {
-            bestScore = score;
-            bestPlacement = { ...wordObj, row, col, direction, number: 0 };
-          }
+          candidates.push({ ...wordObj, row, col, direction, number: 0, score });
         }
       }
     }
   }
 
-  // Place the word on the grid
-  if (bestPlacement) {
-    const { word: w, row, col, direction } = bestPlacement;
-    for (let i = 0; i < w.length; i++) {
-      if (direction === 'across') {
-        grid[row][col + i] = w[i];
-      } else {
-        grid[row + i][col] = w[i];
-      }
-    }
+  if (candidates.length === 0) return null;
+
+  // Pick best candidate
+  candidates.sort((a, b) => b.score - a.score);
+  const best = candidates[0];
+
+  // Place on grid
+  const dr = best.direction === 'down' ? 1 : 0;
+  const dc = best.direction === 'across' ? 1 : 0;
+  for (let i = 0; i < best.word.length; i++) {
+    grid[best.row + dr * i][best.col + dc * i] = best.word[i];
   }
 
-  return bestPlacement;
+  delete best.score; // clean up
+  return best;
 }
 
 /**
@@ -223,133 +314,6 @@ function countIntersections(grid, word, row, col, direction, maxSize) {
   }
 
   return count;
-}
-
-/**
- * Trim grid to the minimum bounding box
- */
-function trimGrid(grid, maxSize) {
-  let minRow = maxSize, maxRow = 0, minCol = maxSize, maxCol = 0;
-
-  for (let r = 0; r < maxSize; r++) {
-    for (let c = 0; c < maxSize; c++) {
-      if (grid[r][c] !== '') {
-        minRow = Math.min(minRow, r);
-        maxRow = Math.max(maxRow, r);
-        minCol = Math.min(minCol, c);
-        maxCol = Math.max(maxCol, c);
-      }
-    }
-  }
-
-  // Add 1 cell padding
-  minRow = Math.max(0, minRow - 1);
-  minCol = Math.max(0, minCol - 1);
-  maxRow = Math.min(maxSize - 1, maxRow + 1);
-  maxCol = Math.min(maxSize - 1, maxCol + 1);
-
-  const rows = maxRow - minRow + 1;
-  const cols = maxCol - minCol + 1;
-  const trimmedGrid = [];
-
-  for (let r = 0; r < rows; r++) {
-    trimmedGrid[r] = [];
-    for (let c = 0; c < cols; c++) {
-      trimmedGrid[r][c] = grid[minRow + r][minCol + c];
-    }
-  }
-
-  // Adjust placed word positions (done externally)
-  return {
-    grid: trimmedGrid,
-    rows,
-    cols,
-    offsetRow: minRow,
-    offsetCol: minCol,
-    // We'll adjust placedWords outside
-    get placedWords() { return []; }, // placeholder
-  };
-}
-
-/**
- * Full pipeline: generate grid + adjust coordinates + assign numbers
- */
-export function buildCrossword(wordList) {
-  if (!wordList || wordList.length === 0) return null;
-
-  const words = wordList
-    .map(w => ({
-      ...w,
-      originalWord: w.word, // keep original (may have harakat)
-      word: cleanWord(w.word),
-    }))
-    .filter(w => w.word.length >= 2)
-    .sort((a, b) => b.word.length - a.word.length);
-
-  if (words.length === 0) return null;
-
-  const maxSize = 30;
-  const grid = Array.from({ length: maxSize }, () => Array(maxSize).fill(''));
-  const placedWords = [];
-
-  // Place first word
-  const firstWord = words[0];
-  const startRow = Math.floor(maxSize / 2);
-  const startCol = Math.floor((maxSize - firstWord.word.length) / 2);
-
-  for (let i = 0; i < firstWord.word.length; i++) {
-    grid[startRow][startCol + i] = firstWord.word[i];
-  }
-  placedWords.push({ ...firstWord, row: startRow, col: startCol, direction: 'across', number: 0 });
-
-  // Place remaining
-  for (let w = 1; w < words.length; w++) {
-    const placed = tryPlaceWord(grid, placedWords, words[w], maxSize);
-    if (placed) placedWords.push(placed);
-  }
-
-  // Find bounding box
-  let minRow = maxSize, maxRow = 0, minCol = maxSize, maxCol = 0;
-  for (let r = 0; r < maxSize; r++) {
-    for (let c = 0; c < maxSize; c++) {
-      if (grid[r][c] !== '') {
-        minRow = Math.min(minRow, r);
-        maxRow = Math.max(maxRow, r);
-        minCol = Math.min(minCol, c);
-        maxCol = Math.max(maxCol, c);
-      }
-    }
-  }
-
-  const rows = maxRow - minRow + 1;
-  const cols = maxCol - minCol + 1;
-
-  // Build trimmed grid
-  const trimmedGrid = [];
-  for (let r = 0; r < rows; r++) {
-    trimmedGrid[r] = [];
-    for (let c = 0; c < cols; c++) {
-      trimmedGrid[r][c] = grid[minRow + r][minCol + c];
-    }
-  }
-
-  // Adjust placed word coordinates
-  for (const pw of placedWords) {
-    pw.row -= minRow;
-    pw.col -= minCol;
-  }
-
-  // Assign numbers
-  assignNumbers(placedWords);
-
-  return {
-    grid: trimmedGrid,
-    placedWords,
-    rows,
-    cols,
-    totalPlaced: placedWords.length,
-    totalAttempted: words.length,
-  };
 }
 
 /**
