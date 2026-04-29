@@ -28,7 +28,7 @@ async function rateLimit(provider = 'gemini') {
  * Returns { text, useOwnKey } or throws error
  */
 async function callGeminiProxy(prompt, maxRetries = 4) {
-  const model = state.get('settings.geminiModel') || 'gemini-2.5-flash-lite';
+  const model = state.get('settings.geminiModel') || 'gemini-3.1-flash-lite-preview';
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const response = await fetch('/api/gemini', {
@@ -68,7 +68,7 @@ async function callGeminiProxy(prompt, maxRetries = 4) {
  */
 async function callGeminiDirect(prompt, maxRetries = 4) {
   const apiKey = state.get('settings.geminiKey');
-  let model = state.get('settings.geminiModel') || 'gemini-2.5-flash-lite';
+  let model = state.get('settings.geminiModel') || 'gemini-3.1-flash-lite-preview';
 
   if (!apiKey) {
     showApiKeyGuide();
@@ -115,11 +115,11 @@ async function callGeminiDirect(prompt, maxRetries = 4) {
           throw new Error('Model sedang sibuk (503). Coba ganti model di ⚙️ Settings atau coba lagi nanti.');
         }
 
-        // Model not found (404) — auto-switch to stable default
+        // Model not found (404) — auto-switch to stable fallback
         if (response.status === 404) {
-          console.warn(`Model ${model} not found, switching to gemini-2.5-flash-lite`);
-          showToast('⚠️ Model tidak tersedia, beralih ke Gemini 2.5 Flash Lite', 'warning');
-          model = 'gemini-2.5-flash-lite';
+          console.warn(`Model ${model} not found, switching to gemini-2.5-flash`);
+          showToast('⚠️ Model tidak tersedia, beralih ke Gemini 2.5 Flash', 'warning');
+          model = 'gemini-2.5-flash';
           state.set('settings.geminiModel', model);
           continue;
         }

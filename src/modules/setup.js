@@ -1,14 +1,13 @@
 // ============================================================
-// Setup Module — Step 1: Data Input + CP Scanning + Modul Ajar
+// Setup Module — Step 1: Data Input + CP Scanning
 // ============================================================
 
 import { state } from '../state.js';
 import { showToast, uid } from '../utils/helpers.js';
 import { generateText, parseJsonResponse } from '../services/gemini.js';
-import { cpScanningPrompt, distribusiPertemuanPrompt } from '../utils/prompts.js';
-
-let isScanningCP = false;
-let isDistributing = false;
+import { cpScanningPrompt } from '../utils/prompts.js';
+import { getSubjectsForJenjang, getFasesForSubject, getCPList, jenjangMapping } from '../utils/cp-data.js';
+import { analisisSemuaCP, formatAnalisisForPrompt } from '../utils/cp-analyzer.js';
 
 export default {
   render() {
@@ -40,306 +39,108 @@ export default {
           </div>
         </div>
 
-        <div class="form-row" id="row-subject-phase">
+        <div class="form-row" id="row-jenjang">
           <div class="form-group">
-            <label class="form-label" for="input-subject">Mata Pelajaran <span class="required">*</span></label>
-            <input class="form-input" id="input-subject" type="text" placeholder="Contoh: Bahasa Inggris" value="${book.subject || ''}" />
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="input-classphase">Fase / Kelas <span class="required">*</span></label>
-            <input class="form-input" id="input-classphase" type="text" placeholder="Contoh: Fase D / Kelas 7" value="${book.classPhase || ''}" />
-          </div>
-        </div>
-      </div>
-
-      <!-- ====== CP SCANNING (Optional) ====== -->
-      <div class="card cp-scanning-card" style="margin-bottom: var(--space-lg);" id="cp-scanning-card">
-        <div class="card-header">
-          <h3 class="card-title">🔬 Scanning CP (Capaian Pembelajaran)</h3>
-          <span class="badge badge-cyan">Opsional</span>
-        </div>
-        <p class="form-hint" style="margin-bottom: var(--space-md);">
-          AI akan meriset Capaian Pembelajaran resmi dari Kurikulum Merdeka berdasarkan mata pelajaran & fase.
-          CP yang ditemukan menjadi <strong>sumber utama</strong> untuk generate semua dokumen.
-        </p>
-
-        <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-md);">
-          <button class="btn btn-primary" id="btn-scan-cp" ${isScanningCP ? 'disabled' : ''}>
-            ${isScanningCP ? '⏳ Scanning...' : cpData.length > 0 ? '🔄 Scan Ulang CP' : '🔬 Mulai Scanning CP'}
-          </button>
-          ${cpData.length > 0 ? `
-            <button class="btn btn-ghost btn-sm" id="btn-clear-cp">🗑️ Hapus CP</button>
-          ` : ''}
-        </div>
-
-        <div id="cp-scanning-loading" style="display:none;">
-          <div class="card" style="text-align:center; padding: var(--space-xl); background: rgba(139,92,246,0.05); border: 1px dashed rgba(139,92,246,0.3);">
-            <div class="loading-spinner" style="margin: 0 auto var(--space-md);"></div>
-            <p style="color: var(--text-secondary);">AI sedang meriset CP dari Kurikulum Merdeka<span class="loading-dots"></span></p>
-            <p style="font-size: 11px; color: var(--text-tertiary); margin-top: var(--space-xs);">Proses ini membutuhkan waktu 10-30 detik</p>
-          </div>
-        </div>
-
-        <div id="cp-results-container">
-          ${cpData.length > 0 ? this.renderCPResults(cpData) : `
-            <div class="cp-empty-hint" style="text-align:center; padding: var(--space-lg); color: var(--text-tertiary); font-size: var(--fs-sm);">
-              <div style="font-size: 2rem; margin-bottom: var(--space-xs);">📋</div>
-              Belum ada CP. Isi mata pelajaran & fase di atas, lalu klik "Mulai Scanning CP".
-            </div>
-          `}
-        </div>
-      </div>
-
-      <!-- ====== MODUL AJAR MULTI-PERTEMUAN (Optional) ====== -->
-      <div class="card modul-ajar-card" style="margin-bottom: var(--space-lg);" id="modul-ajar-card">
-        <div class="card-header">
-          <h3 class="card-title">📅 Modul Ajar Multi-Pertemuan</h3>
-          <span class="badge badge-green">Opsional</span>
-        </div>
-        <p class="form-hint" style="margin-bottom: var(--space-md);">
-          Buat modul ajar lengkap untuk 1 tahun atau 1 semester. CP akan didistribusikan ke setiap pertemuan secara proporsional.
-        </p>
-
-        <div class="form-group">
-          <label class="form-label">Mode Modul Ajar</label>
-          <div class="modul-ajar-mode-grid" id="modul-ajar-mode-grid">
-            <label class="school-level-card ${!book.modulAjarMode ? 'active' : ''}">
-              <input type="radio" name="modul-ajar-mode" value="" ${!book.modulAjarMode ? 'checked' : ''} />
-              <div class="school-level-icon">❌</div>
-              <div class="school-level-title">Nonaktif</div>
-              <div class="school-level-desc">Tidak membuat modul multi-pertemuan</div>
-            </label>
-            <label class="school-level-card ${book.modulAjarMode === 'tahunan' ? 'active' : ''}">
-              <input type="radio" name="modul-ajar-mode" value="tahunan" ${book.modulAjarMode === 'tahunan' ? 'checked' : ''} />
-              <div class="school-level-icon">📆</div>
-              <div class="school-level-title">1 Tahun</div>
-              <div class="school-level-desc">12-16 pertemuan</div>
-            </label>
-            <label class="school-level-card ${book.modulAjarMode === 'semester' ? 'active' : ''}">
-              <input type="radio" name="modul-ajar-mode" value="semester" ${book.modulAjarMode === 'semester' ? 'checked' : ''} />
-              <div class="school-level-icon">📅</div>
-              <div class="school-level-title">1 Semester</div>
-              <div class="school-level-desc">6-8 pertemuan</div>
-            </label>
-          </div>
-        </div>
-
-        <div id="modul-ajar-settings" style="display: ${book.modulAjarMode ? 'block' : 'none'};">
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="input-total-pertemuan">
-                Jumlah Pertemuan: <strong id="pertemuan-value">${book.totalPertemuan || 12}</strong>
-              </label>
-              <input type="range" class="form-range" id="input-total-pertemuan" 
-                min="${book.modulAjarMode === 'semester' ? 6 : 12}" 
-                max="${book.modulAjarMode === 'semester' ? 8 : 16}" 
-                value="${book.totalPertemuan || 12}" />
-              <div class="range-labels">
-                <span>${book.modulAjarMode === 'semester' ? '6' : '12'}</span>
-                <span>${book.modulAjarMode === 'semester' ? '8' : '16'}</span>
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="input-jumlah-sumatif">
-                Sumatif Harian: <strong id="sumatif-value">${book.jumlahSumatif || 0}</strong>x
-              </label>
-              <input type="range" class="form-range" id="input-jumlah-sumatif" 
-                min="0" max="6" 
-                value="${book.jumlahSumatif || 0}" />
-              <div class="range-labels">
-                <span>0 (tanpa sumatif)</span>
-                <span>6</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sumatif Position Config -->
-          <div id="sumatif-position-config" style="display: ${(book.jumlahSumatif || 0) > 0 ? 'block' : 'none'};">
-            <div class="form-group">
-              <label class="form-label">Posisi Pertemuan Sumatif</label>
-              <div style="display: flex; gap: var(--space-sm); align-items: center; margin-bottom: var(--space-sm);">
-                <label class="checkbox-item" style="flex: none;">
-                  <input type="radio" name="sumatif-pos-mode" value="auto" ${(!book.sumatifPositions || book.sumatifPositions.length === 0) ? 'checked' : ''} />
-                  <span>Otomatis (merata)</span>
-                </label>
-                <label class="checkbox-item" style="flex: none;">
-                  <input type="radio" name="sumatif-pos-mode" value="custom" ${(book.sumatifPositions && book.sumatifPositions.length > 0) ? 'checked' : ''} />
-                  <span>Custom</span>
-                </label>
-              </div>
-              <div id="sumatif-custom-positions" style="display: ${(book.sumatifPositions && book.sumatifPositions.length > 0) ? 'block' : 'none'};">
-                <input class="form-input" id="input-sumatif-positions" type="text" 
-                  placeholder="Contoh: 3, 6, 9, 12"
-                  value="${(book.sumatifPositions || []).join(', ')}" />
-                <small class="form-hint">Masukkan nomor pertemuan sumatif, pisahkan dengan koma</small>
-              </div>
-              <div id="sumatif-auto-preview" style="display: ${(!book.sumatifPositions || book.sumatifPositions.length === 0) ? 'block' : 'none'};">
-                <small class="form-hint" id="sumatif-auto-text">
-                  ${this.getAutoSumatifText(book.totalPertemuan || 12, book.jumlahSumatif || 0)}
-                </small>
-              </div>
-            </div>
-          </div>
-
-          <!-- Distribution Preview -->
-          <div id="distribusi-preview" style="margin-top: var(--space-md);">
-            ${distribusi.length > 0 ? this.renderDistribusiPreview(distribusi) : ''}
-          </div>
-
-          <div style="margin-top: var(--space-md); display: flex; gap: var(--space-sm);">
-            <button class="btn btn-secondary" id="btn-generate-distribusi" ${isDistributing ? 'disabled' : ''} ${cpData.length === 0 ? 'disabled title="Scan CP terlebih dahulu"' : ''}>
-              ${isDistributing ? '⏳ Membuat distribusi...' : '📊 Generate Distribusi Pertemuan'}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ====== JENJANG & SEMESTER (Phase 1) ====== -->
-      <div class="card" style="margin-bottom: var(--space-lg);" id="jenjang-card">
-        <div class="card-header">
-          <h3 class="card-title">🎓 Jenjang & Semester</h3>
-          <span class="badge badge-purple">Penting</span>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Jenjang Sekolah</label>
+            <label class="form-label">Jenjang Sekolah <span class="required">*</span></label>
             <div class="school-level-grid" id="jenjang-grid">
-              ${['SD', 'SMP', 'SMA', 'SMK', 'MA'].map(j => `
+              ${['PAUD', 'SD', 'SMP', 'SMA', 'Paket'].map(j => `
                 <label class="school-level-card ${book.jenjang === j ? 'active' : ''}" style="padding: 10px 14px;">
                   <input type="radio" name="jenjang" value="${j}" ${book.jenjang === j ? 'checked' : ''} />
                   <div class="school-level-title" style="font-size: 0.85rem;">${j}</div>
                 </label>
               `).join('')}
             </div>
-            <small class="form-hint">Mempengaruhi durasi JP: SD=30, SMP=40, SMA/SMK/MA=45 menit</small>
+            <small class="form-hint">Mempengaruhi pilihan mapel dan fase.</small>
           </div>
+        </div>
+
+        <div class="form-row" id="row-subject-phase">
+          <div class="form-group">
+            <label class="form-label" for="input-subject">Mata Pelajaran <span class="required">*</span></label>
+            <select class="form-select" id="input-subject">
+              <option value="">-- Pilih Jenjang Terlebih Dahulu --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-classphase">Fase <span class="required">*</span></label>
+            <select class="form-select" id="input-classphase">
+              <option value="">-- Pilih Mapel Terlebih Dahulu --</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== CP SCANNING (Auto Load) ====== -->
+      <div class="card cp-scanning-card" style="margin-bottom: var(--space-lg);" id="cp-scanning-card">
+        <div class="card-header">
+          <h3 class="card-title">📋 Data Capaian Pembelajaran (CP)</h3>
+          <span class="badge badge-purple">Otomatis BSKAP 046/2025</span>
+        </div>
+        <p class="form-hint" style="margin-bottom: var(--space-md);">
+          CP dimuat secara otomatis berdasarkan pilihan jenjang, mapel, dan fase. Anda dapat menambah atau mengedit CP secara manual jika diperlukan.
+        </p>
+
+        <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-md);">
+          ${cpData.length > 0 ? `
+            <button class="btn btn-ghost btn-sm" id="btn-clear-cp">🗑️ Hapus Semua CP</button>
+          ` : ''}
+        </div>
+
+        <div id="cp-results-container">
+          ${cpData.length > 0 ? this.renderCPResults(cpData) : `
+            <div class="cp-empty-hint" style="text-align:center; padding: var(--space-lg); color: var(--text-tertiary); font-size: var(--fs-sm);">
+              <div style="font-size: 2rem; margin-bottom: var(--space-xs);">📋</div>
+              Belum ada CP. Pilih Jenjang, Mata Pelajaran, dan Fase di atas agar CP termuat otomatis.
+            </div>
+          `}
+        </div>
+      </div>
+
+      <!-- ====== ANALISIS CP (Bedah Kalimat) ====== -->
+      <div class="card" style="margin-bottom: var(--space-lg);" id="analisis-cp-card">
+        <div class="card-header">
+          <h3 class="card-title">🔬 Analisis Narasi CP</h3>
+          <span class="badge badge-blue">Bedah Kalimat</span>
+        </div>
+        <p class="form-hint" style="margin-bottom: var(--space-md);">
+          Bedah CP menjadi <strong>Kompetensi</strong> (Kata Kerja Operasional) dan <strong>Lingkup Materi</strong>. 
+          Hasil analisis menjadi fondasi penyusunan TP, ATP, KKTP, Asesmen, dan Modul Ajar.
+        </p>
+        
+        <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-md);">
+          <button class="btn btn-primary btn-sm" id="btn-analisis-cp" ${cpData.length === 0 ? 'disabled' : ''}>
+            🔍 Analisis CP Otomatis
+          </button>
+        </div>
+
+        <div id="analisis-cp-container">
+          ${(state.get('book.cpAnalisis') && state.get('book.cpAnalisis').length > 0) ? this.renderAnalisisCP(state.get('book.cpAnalisis')) : `
+            <div style="text-align:center; padding: var(--space-lg); color: var(--text-tertiary); font-size: var(--fs-sm);">
+              <div style="font-size: 2rem; margin-bottom: var(--space-xs);">🔬</div>
+              Klik tombol "Analisis CP Otomatis" setelah CP dimuat untuk membedah narasi CP.
+            </div>
+          `}
+        </div>
+      </div>
+
+      <!-- ====== SEMESTER & TAHUN AJARAN ====== -->
+      <div class="card" style="margin-bottom: var(--space-lg);" id="jenjang-card">
+        <div class="card-header">
+          <h3 class="card-title">📅 Semester & Tahun Ajaran</h3>
+          <span class="badge badge-purple">Penting</span>
+        </div>
+        <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="input-semester">Semester</label>
             <select class="form-select" id="input-semester">
               <option value="1" ${book.semester === '1' ? 'selected' : ''}>Semester 1 (Ganjil)</option>
               <option value="2" ${book.semester === '2' ? 'selected' : ''}>Semester 2 (Genap)</option>
             </select>
-            <div class="form-group" style="margin-top: var(--space-sm);">
-              <label class="form-label" for="input-tahun-ajaran">Tahun Ajaran</label>
-              <input class="form-input" id="input-tahun-ajaran" type="text" placeholder="2025/2026" value="${book.tahunAjaran || ''}" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ====== ALOKASI WAKTU (Phase 2) ====== -->
-      <div class="card" style="margin-bottom: var(--space-lg);" id="alokasi-waktu-card">
-        <div class="card-header">
-          <h3 class="card-title">⏱️ Alokasi Waktu Pembelajaran</h3>
-          <span class="badge badge-cyan">Penting</span>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="input-durasi-jp">Durasi per JP: <strong id="durasi-jp-value">${(book.alokasiWaktu || {}).durasiJP || 40}</strong> menit</label>
-            <input type="range" class="form-range" id="input-durasi-jp" min="25" max="50" step="5" value="${(book.alokasiWaktu || {}).durasiJP || 40}" />
-            <div class="range-labels"><span>25</span><span>30 (SD)</span><span>40 (SMP)</span><span>45 (SMA)</span><span>50</span></div>
           </div>
           <div class="form-group">
-            <label class="form-label" for="input-jp-per-pertemuan">JP per Pertemuan: <strong id="jp-per-pertemuan-value">${(book.alokasiWaktu || {}).jpPerPertemuan || 2}</strong></label>
-            <input type="range" class="form-range" id="input-jp-per-pertemuan" min="1" max="6" value="${(book.alokasiWaktu || {}).jpPerPertemuan || 2}" />
-            <div class="range-labels"><span>1 JP</span><span>6 JP</span></div>
+            <label class="form-label" for="input-tahun-ajaran">Tahun Ajaran</label>
+            <input class="form-input" id="input-tahun-ajaran" type="text" placeholder="2025/2026" value="${book.tahunAjaran || ''}" />
           </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="input-jp-per-minggu">JP per Minggu: <strong id="jp-per-minggu-value">${(book.alokasiWaktu || {}).jpPerMinggu || 4}</strong></label>
-            <input type="range" class="form-range" id="input-jp-per-minggu" min="1" max="12" value="${(book.alokasiWaktu || {}).jpPerMinggu || 4}" />
-            <div class="range-labels"><span>1</span><span>12</span></div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Total Menit per Pertemuan</label>
-            <div id="total-menit-display" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-primary);">
-              ${((book.alokasiWaktu || {}).jpPerPertemuan || 2) * ((book.alokasiWaktu || {}).durasiJP || 40)} menit
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ====== SUMATIF CONFIG (Phase 3) ====== -->
-      <div class="card" style="margin-bottom: var(--space-lg);" id="sumatif-config-card">
-        <div class="card-header">
-          <h3 class="card-title">📝 Konfigurasi Sumatif dalam Modul Ajar</h3>
-          <span class="badge badge-green">Opsional</span>
-        </div>
-        <p class="form-hint" style="margin-bottom: var(--space-md);">
-          Atur komposisi soal untuk pertemuan sumatif harian di dalam modul ajar. Konfigurasi ini berlaku untuk SEMUA pertemuan sumatif.
-        </p>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Jenis & Jumlah Soal</label>
-            ${[
-              { key: 'pilihan_ganda', label: 'Pilihan Ganda', icon: '🔘' },
-              { key: 'isian_singkat', label: 'Isian Singkat', icon: '✏️' },
-              { key: 'esai', label: 'Esai/Uraian', icon: '📝' },
-              { key: 'mencocokkan', label: 'Mencocokkan', icon: '🔗' },
-            ].map(t => `
-              <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-                <label class="checkbox-label" style="min-width: 160px;">
-                  <input type="checkbox" class="sumatif-type-toggle" data-type="${t.key}" 
-                    ${(book.sumatifConfig || {}).enabledTypes?.[t.key] ? 'checked' : ''} />
-                  ${t.icon} ${t.label}
-                </label>
-                <input type="number" class="form-input sumatif-count-input" data-type="${t.key}" 
-                  min="1" max="50" value="${(book.sumatifConfig || {}).questionCount?.[t.key] || 5}"
-                  style="width: 70px; padding: 6px 8px; text-align: center;" />
-                <span style="font-size: var(--fs-xs); color: var(--text-tertiary);">soal</span>
-              </div>
-            `).join('')}
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="input-pg-options">Opsi PG (A-...)</label>
-            <select class="form-select" id="input-pg-options" style="margin-bottom: var(--space-md);">
-              <option value="3" ${(book.sumatifConfig || {}).pgOptionCount === 3 ? 'selected' : ''}>3 Opsi (A-C)</option>
-              <option value="4" ${(book.sumatifConfig || {}).pgOptionCount === 4 || !(book.sumatifConfig || {}).pgOptionCount ? 'selected' : ''}>4 Opsi (A-D)</option>
-              <option value="5" ${(book.sumatifConfig || {}).pgOptionCount === 5 ? 'selected' : ''}>5 Opsi (A-E)</option>
-            </select>
-            <label class="form-label">Level Kognitif</label>
-            <div id="difficulty-level-grid">
-              ${[
-                { value: 'mudah', label: 'C1-C2 Dasar', icon: '🟢' },
-                { value: 'sedang', label: 'C3-C4 Sedang', icon: '🟡' },
-                { value: 'hots', label: 'C4-C6 HOTS', icon: '🔴' },
-              ].map(d => `
-                <label class="checkbox-item">
-                  <input type="radio" name="difficulty-level" value="${d.value}" 
-                    ${(book.sumatifConfig || {}).difficultyLevel === d.value || (!(book.sumatifConfig || {}).difficultyLevel && d.value === 'sedang') ? 'checked' : ''} />
-                  <span>${d.icon} ${d.label}</span>
-                </label>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ====== MODEL PEMBELAJARAN (Phase 5) ====== -->
-      <div class="card" style="margin-bottom: var(--space-lg);" id="model-pembelajaran-card">
-        <div class="card-header">
-          <h3 class="card-title">🧪 Model/Metode Pembelajaran</h3>
-          <span class="badge badge-green">Opsional</span>
-        </div>
-        <p class="form-hint" style="margin-bottom: var(--space-md);">Pilih 1-3 model. AI akan menyesuaikan langkah pembelajaran dan asesmen.</p>
-        <div class="school-level-grid" id="model-pembelajaran-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
-          ${[
-            { value: 'pbl', icon: '🔬', label: 'Problem Based Learning' },
-            { value: 'pjbl', icon: '📐', label: 'Project Based Learning' },
-            { value: 'discovery', icon: '🔍', label: 'Discovery Learning' },
-            { value: 'inquiry', icon: '❓', label: 'Inquiry Based Learning' },
-            { value: 'cooperative', icon: '🤝', label: 'Cooperative Learning' },
-            { value: 'direct', icon: '📚', label: 'Direct Instruction' },
-            { value: 'differentiated', icon: '🎯', label: 'Differentiated Instruction' },
-          ].map(m => `
-            <label class="school-level-card ${(book.modelPembelajaran || []).includes(m.value) ? 'active' : ''}" style="padding: 10px;">
-              <input type="checkbox" name="model-pembelajaran" value="${m.value}" 
-                ${(book.modelPembelajaran || []).includes(m.value) ? 'checked' : ''} hidden />
-              <div class="school-level-icon">${m.icon}</div>
-              <div class="school-level-title" style="font-size: 0.75rem;">${m.label}</div>
-            </label>
-          `).join('')}
         </div>
       </div>
 
@@ -370,38 +171,6 @@ export default {
             <div class="school-level-title">Pelosok / Daerah 3T</div>
             <div class="school-level-desc">Tanpa internet, tanpa proyektor, media dari alam & bahan sederhana</div>
           </label>
-        </div>
-      </div>
-
-      <!-- Topic & Details -->
-      <div class="card" style="margin-bottom: var(--space-lg);">
-        <div class="card-header">
-          <h3 class="card-title">📋 Detail Materi</h3>
-          <span class="badge badge-green">Opsional</span>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="input-topic">Topik / Materi <small style="color:#6b7280; font-weight:normal;">(Kosongkan agar AI menentukan otomatis)</small></label>
-          <input class="form-input" id="input-topic" type="text" placeholder="Contoh: Sistem Pernapasan Manusia..." value="${book.topic || ''}" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="input-desc">Catatan Khusus <small style="color:#6b7280; font-weight:normal;">(Opsional)</small></label>
-          <textarea class="form-textarea" id="input-desc" placeholder="Contoh: Fokus pada siswa inklusi, tambahkan kegiatan outdoor...">${book.description || ''}</textarea>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="input-length">Kedalaman Penjabaran</label>
-          <select class="form-select" id="input-length">
-            <option value="pendek" ${book.chapterLength === 'pendek' ? 'selected' : ''}>📄 Singkat / Poin-poin</option>
-            <option value="sedang" ${book.chapterLength === 'sedang' ? 'selected' : ''}>📑 Sedang / Cukup Detail</option>
-            <option value="panjang" ${book.chapterLength === 'panjang' ? 'selected' : ''}>📚 Sangat Detail & Komprehensif</option>
-          </select>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 0;">
-          <label class="form-label" for="input-reference">Material Referensi <small style="color:#6b7280; font-weight:normal;">(Opsional — paste silabus, CP, dll.)</small></label>
-          <textarea class="form-textarea" id="input-reference" placeholder="Paste copy dokumen referensi di sini..." style="min-height: 100px;">${book.referenceText || ''}</textarea>
         </div>
       </div>
     `;
@@ -436,6 +205,131 @@ export default {
             </div>
           `).join('')}
         </div>
+      </div>
+    `;
+  },
+
+  /**
+   * Render hasil analisis CP
+   */
+  renderAnalisisCP(analisisResults) {
+    if (!analisisResults || analisisResults.length === 0) return '';
+    
+    // Compute totals
+    let totalKKO = 0, totalMateri = 0, totalTP = 0;
+    const bloomCounts = {};
+    for (const r of analisisResults) {
+      totalKKO += r.analisis.kompetensi.length;
+      totalMateri += r.analisis.lingkupMateri.length;
+      totalTP += r.analisis.tujuanPembelajaran.length;
+      for (const k of r.analisis.kompetensi) {
+        bloomCounts[k.levelShort] = (bloomCounts[k.levelShort] || 0) + 1;
+      }
+    }
+    
+    const bloomColors = {
+      C1: '#6366f1', C2: '#8b5cf6', C3: '#3b82f6',
+      C4: '#f59e0b', C5: '#ef4444', C6: '#10b981',
+    };
+
+    return `
+      <div class="analisis-cp-results">
+        <!-- Summary Stats -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-sm); margin-bottom: var(--space-md);">
+          <div style="background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3); border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 1.5rem; font-weight: 700; color: #6366f1;">${totalKKO}</div>
+            <div style="font-size: 0.7rem; color: var(--text-tertiary); text-transform: uppercase;">Kompetensi (KKO)</div>
+          </div>
+          <div style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 1.5rem; font-weight: 700; color: #3b82f6;">${totalMateri}</div>
+            <div style="font-size: 0.7rem; color: var(--text-tertiary); text-transform: uppercase;">Lingkup Materi</div>
+          </div>
+          <div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 1.5rem; font-weight: 700; color: #10b981;">${totalTP}</div>
+            <div style="font-size: 0.7rem; color: var(--text-tertiary); text-transform: uppercase;">Rumusan TP</div>
+          </div>
+          <div style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 1.5rem; font-weight: 700; color: #f59e0b;">${Object.keys(bloomCounts).sort().join(', ') || '-'}</div>
+            <div style="font-size: 0.7rem; color: var(--text-tertiary); text-transform: uppercase;">Level Bloom</div>
+          </div>
+        </div>
+
+        <!-- Bloom Taxonomy Bar -->
+        ${Object.keys(bloomCounts).length > 0 ? `
+          <div style="margin-bottom: var(--space-md);">
+            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Distribusi Taksonomi Bloom</div>
+            <div style="display: flex; height: 8px; border-radius: 8px; overflow: hidden; gap: 2px;">
+              ${Object.entries(bloomCounts).sort().map(([level, count]) => `
+                <div style="flex: ${count}; background: ${bloomColors[level] || '#888'}; position: relative;" title="${level}: ${count} KKO"></div>
+              `).join('')}
+            </div>
+            <div style="display: flex; gap: var(--space-sm); margin-top: 6px; flex-wrap: wrap;">
+              ${Object.entries(bloomCounts).sort().map(([level, count]) => `
+                <span style="font-size: 0.65rem; display: flex; align-items: center; gap: 4px; color: var(--text-tertiary);">
+                  <span style="width: 8px; height: 8px; border-radius: 50%; background: ${bloomColors[level] || '#888'};"></span>
+                  ${level} (${count})
+                </span>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Per-CP Detail -->
+        ${analisisResults.map((result, rIdx) => `
+          <details class="analisis-cp-detail" ${rIdx === 0 ? 'open' : ''} style="margin-bottom: var(--space-sm); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden;">
+            <summary style="padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: var(--space-sm); font-weight: 600; font-size: 0.85rem;">
+              <span style="background: rgba(99,102,241,0.2); color: #a5b4fc; padding: 2px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700;">${result.cpCode}</span>
+              <span style="flex: 1; color: var(--text-primary);">${result.cpDescription.substring(0, 80)}${result.cpDescription.length > 80 ? '...' : ''}</span>
+              <span style="font-size: 0.7rem; color: var(--text-tertiary);">${result.analisis.statistik.totalKKO} KKO · ${result.analisis.statistik.totalMateri} Materi</span>
+            </summary>
+            <div style="padding: 0 16px 16px 16px;">
+              <!-- Kompetensi -->
+              ${result.analisis.kompetensi.length > 0 ? `
+                <div style="margin-bottom: var(--space-sm);">
+                  <div style="font-size: 0.7rem; font-weight: 700; color: #a78bfa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">📌 Kompetensi (Kata Kerja Operasional)</div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                    ${result.analisis.kompetensi.map(k => `
+                      <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+                        background: ${bloomColors[k.levelShort] || '#888'}22; color: ${bloomColors[k.levelShort] || '#888'}; border: 1px solid ${bloomColors[k.levelShort] || '#888'}44;">
+                        ${k.kataKerja}
+                        <span style="font-size: 0.6rem; opacity: 0.7;">[${k.levelShort}]</span>
+                      </span>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Lingkup Materi -->
+              ${result.analisis.lingkupMateri.length > 0 ? `
+                <div style="margin-bottom: var(--space-sm);">
+                  <div style="font-size: 0.7rem; font-weight: 700; color: #60a5fa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">📚 Lingkup Materi</div>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    ${result.analisis.lingkupMateri.map((m, mIdx) => `
+                      <div style="padding: 6px 12px; background: rgba(59,130,246,0.08); border-radius: 8px; font-size: 0.75rem; color: var(--text-secondary);">
+                        <strong>${mIdx + 1}.</strong> ${m.topik}
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Tujuan Pembelajaran -->
+              ${result.analisis.tujuanPembelajaran.length > 0 ? `
+                <div>
+                  <div style="font-size: 0.7rem; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">🎯 Rumusan Tujuan Pembelajaran (TP)</div>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    ${result.analisis.tujuanPembelajaran.map((tp, tIdx) => `
+                      <div style="padding: 8px 12px; background: rgba(16,185,129,0.08); border-left: 3px solid #10b981; border-radius: 0 8px 8px 0; font-size: 0.75rem;">
+                        <div style="color: var(--text-primary); font-weight: 500;">TP ${tIdx + 1}: ${tp.tp}</div>
+                        <div style="font-size: 0.65rem; color: var(--text-tertiary); margin-top: 2px;">Kompetensi: ${tp.kompetensi} [${tp.levelBloom}] · Materi: ${tp.lingkupMateri}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </details>
+        `).join('')}
       </div>
     `;
   },
@@ -493,7 +387,6 @@ export default {
       const container = document.getElementById('input-doctype-container');
       const subjectPhaseRow = document.getElementById('row-subject-phase');
       const cpCard = document.getElementById('cp-scanning-card');
-      const modulCard = document.getElementById('modul-ajar-card');
       const currentDocTypes = state.get('book.docTypes') || [];
 
       container.innerHTML = '';
@@ -530,138 +423,150 @@ export default {
 
       subjectPhaseRow.style.display = role === 'guru' ? 'grid' : 'none';
       if (cpCard) cpCard.style.display = role === 'guru' ? 'block' : 'none';
-      if (modulCard) modulCard.style.display = role === 'guru' ? 'block' : 'none';
     };
     
     document.getElementById('input-role')?.addEventListener('change', updateDocOptions);
     updateDocOptions();
 
-    // School level card selection
-    document.querySelectorAll('input[name="school-level"]').forEach(radio => {
-      radio.addEventListener('change', () => {
-        document.querySelectorAll('.school-level-card').forEach(c => c.classList.remove('active'));
-        radio.closest('.school-level-card').classList.add('active');
-      });
-    });
-
-    // ====== CP SCANNING ======
-    document.getElementById('btn-scan-cp')?.addEventListener('click', () => this.handleScanCP());
-    document.getElementById('btn-clear-cp')?.addEventListener('click', () => {
-      state.set('book.cpData', []);
-      state.set('book.cpScanned', false);
-      this.refreshCPResults();
-      showToast('CP dihapus.', 'info');
-    });
-
-    // CP item editing & deletion
-    this.attachCPListeners();
-
-    // ====== MODUL AJAR MODE ======
-    document.querySelectorAll('input[name="modul-ajar-mode"]').forEach(radio => {
-      radio.addEventListener('change', () => {
-        document.querySelectorAll('#modul-ajar-mode-grid .school-level-card').forEach(c => c.classList.remove('active'));
-        radio.closest('.school-level-card').classList.add('active');
-        
-        const mode = radio.value || null;
-        state.set('book.modulAjarMode', mode);
-        
-        const settingsDiv = document.getElementById('modul-ajar-settings');
-        settingsDiv.style.display = mode ? 'block' : 'none';
-
-        if (mode) {
-          const slider = document.getElementById('input-total-pertemuan');
-          if (mode === 'semester') {
-            slider.min = 6; slider.max = 8; slider.value = 6;
-            state.set('book.totalPertemuan', 6);
-          } else {
-            slider.min = 12; slider.max = 16; slider.value = 12;
-            state.set('book.totalPertemuan', 12);
-          }
-          document.getElementById('pertemuan-value').textContent = slider.value;
-          // Update range labels
-          const labels = slider.parentElement.querySelector('.range-labels');
-          if (labels) {
-            labels.children[0].textContent = slider.min;
-            labels.children[1].textContent = slider.max;
-          }
-          this.updateAutoSumatifPreview();
-        }
-      });
-    });
-
-    // Pertemuan slider
-    document.getElementById('input-total-pertemuan')?.addEventListener('input', (e) => {
-      const val = parseInt(e.target.value);
-      document.getElementById('pertemuan-value').textContent = val;
-      state.set('book.totalPertemuan', val);
-      this.updateAutoSumatifPreview();
-    });
-
-    // Sumatif slider
-    document.getElementById('input-jumlah-sumatif')?.addEventListener('input', (e) => {
-      const val = parseInt(e.target.value);
-      document.getElementById('sumatif-value').textContent = val;
-      state.set('book.jumlahSumatif', val);
-      
-      const posConfig = document.getElementById('sumatif-position-config');
-      posConfig.style.display = val > 0 ? 'block' : 'none';
-      this.updateAutoSumatifPreview();
-    });
-
-    // Sumatif position mode
-    document.querySelectorAll('input[name="sumatif-pos-mode"]').forEach(radio => {
-      radio.addEventListener('change', () => {
-        const isCustom = radio.value === 'custom';
-        document.getElementById('sumatif-custom-positions').style.display = isCustom ? 'block' : 'none';
-        document.getElementById('sumatif-auto-preview').style.display = isCustom ? 'none' : 'block';
-        if (!isCustom) {
-          state.set('book.sumatifPositions', []);
-        }
-      });
-    });
-
-    // Generate distribusi
-    document.getElementById('btn-generate-distribusi')?.addEventListener('click', () => this.handleGenerateDistribusi());
-
-    // ====== JENJANG AUTO-SET JP DURATION (Phase 1) ======
+    // ====== JENJANG AUTO-SET & DROPDOWNS ======
     document.querySelectorAll('input[name="jenjang"]').forEach(radio => {
       radio.addEventListener('change', () => {
         document.querySelectorAll('#jenjang-grid .school-level-card').forEach(c => c.classList.remove('active'));
         radio.closest('.school-level-card').classList.add('active');
+        
+        const jenjang = radio.value;
+        state.set('book.jenjang', jenjang);
+        
         // Auto-set JP duration based on level
-        const jpMap = { 'SD': 30, 'SMP': 40, 'SMA': 45, 'SMK': 45, 'MA': 45 };
-        const durasiJP = jpMap[radio.value] || 40;
+        const jpMap = { 'PAUD': 30, 'SD': 30, 'SMP': 40, 'SMA': 45, 'Paket': 40 };
+        const durasiJP = jpMap[jenjang] || 40;
         const slider = document.getElementById('input-durasi-jp');
         if (slider) { slider.value = durasiJP; }
         const label = document.getElementById('durasi-jp-value');
         if (label) label.textContent = durasiJP;
         this.updateTotalMenit();
-      });
-    });
 
-    // ====== ALOKASI WAKTU SLIDERS (Phase 2) ======
-    ['input-durasi-jp', 'input-jp-per-pertemuan', 'input-jp-per-minggu'].forEach(id => {
-      document.getElementById(id)?.addEventListener('input', (e) => {
-        const labelId = id.replace('input-', '') + '-value';
-        const label = document.getElementById(labelId);
-        if (label) label.textContent = e.target.value;
-        this.updateTotalMenit();
-      });
-    });
-
-    // ====== MODEL PEMBELAJARAN TOGGLE (Phase 5) ======
-    document.querySelectorAll('#model-pembelajaran-grid .school-level-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const cb = card.querySelector('input[type="checkbox"]');
-        cb.checked = !cb.checked;
-        card.classList.toggle('active', cb.checked);
-        // Limit to 3
-        const checked = document.querySelectorAll('#model-pembelajaran-grid input[type="checkbox"]:checked');
-        if (checked.length > 3) {
-          cb.checked = false;
-          card.classList.remove('active');
-          showToast('Maksimal 3 model pembelajaran.', 'warning');
+        // Populate Subjects Dropdown
+        const subjectSelect = document.getElementById('input-subject');
+        const subjects = getSubjectsForJenjang(jenjang);
+        
+        if (subjects.length > 0) {
+          subjectSelect.innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>' + 
+            subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+        } else {
+          subjectSelect.innerHTML = '<option value="">-- Tidak Ada Data Mapel --</option>';
         }
+        
+        // Reset phase and CP
+        document.getElementById('input-classphase').innerHTML = '<option value="">-- Pilih Mapel Terlebih Dahulu --</option>';
+        state.set('book.subject', '');
+        state.set('book.classPhase', '');
+        state.set('book.cpData', []);
+        this.refreshCPResults();
+      });
+    });
+
+    // Subject selection -> Populate Phase
+    document.getElementById('input-subject')?.addEventListener('change', (e) => {
+      const subject = e.target.value;
+      const jenjang = state.get('book.jenjang');
+      state.set('book.subject', subject);
+      
+      const phaseSelect = document.getElementById('input-classphase');
+      if (!subject) {
+        phaseSelect.innerHTML = '<option value="">-- Pilih Mapel Terlebih Dahulu --</option>';
+        return;
+      }
+
+      const fases = getFasesForSubject(jenjang, subject);
+      if (fases.length > 0) {
+        phaseSelect.innerHTML = '<option value="">-- Pilih Fase --</option>' + 
+          fases.map(f => `<option value="${f}">Fase ${f}</option>`).join('');
+      } else {
+        phaseSelect.innerHTML = '<option value="">-- Tidak Ada Data Fase --</option>';
+      }
+      
+      // Reset CP
+      state.set('book.classPhase', '');
+      state.set('book.cpData', []);
+      this.refreshCPResults();
+    });
+
+    // Phase selection -> Load CP
+    document.getElementById('input-classphase')?.addEventListener('change', (e) => {
+      const fase = e.target.value;
+      const jenjang = state.get('book.jenjang');
+      const subject = state.get('book.subject');
+      state.set('book.classPhase', fase);
+      
+      if (!fase) {
+        state.set('book.cpData', []);
+        this.refreshCPResults();
+        return;
+      }
+
+      // Load CP directly from database
+      const cplist = getCPList(jenjang, subject, fase);
+      if (cplist && cplist.length > 0) {
+        const cpData = cplist.map((cp, idx) => ({
+          id: uid(),
+          code: cp.code || `CP-${idx + 1}`,
+          description: cp.description || '',
+          elemen: cp.elemen || '',
+          profilLulusan: cp.profilLulusan || [],
+        }));
+        state.set('book.cpData', cpData);
+        state.set('book.cpScanned', true);
+
+        // Auto-trigger CP analysis
+        const analisisResults = analisisSemuaCP(cpData);
+        state.set('book.cpAnalisis', analisisResults);
+        this.refreshAnalisisCP(analisisResults);
+        showToast(`✅ Berhasil memuat ${cpData.length} CP & analisis otomatis!`, 'success');
+      } else {
+        state.set('book.cpData', []);
+        state.set('book.cpScanned', false);
+        state.set('book.cpAnalisis', []);
+        this.refreshAnalisisCP([]);
+        showToast('Data CP belum tersedia untuk pilihan ini.', 'warning');
+      }
+      this.refreshCPResults();
+    });
+
+    // ====== CP SCANNING ======
+    document.getElementById('btn-clear-cp')?.addEventListener('click', () => {
+      state.set('book.cpData', []);
+      state.set('book.cpScanned', false);
+      state.set('book.cpAnalisis', []);
+      this.refreshCPResults();
+      this.refreshAnalisisCP([]);
+      showToast('CP dihapus. Anda dapat mengisi kembali secara manual atau memilih ulang fase.', 'info');
+    });
+
+    // ====== ANALISIS CP ======
+    document.getElementById('btn-analisis-cp')?.addEventListener('click', () => {
+      const cpData = state.get('book.cpData') || [];
+      if (cpData.length === 0) {
+        showToast('Muat CP terlebih dahulu sebelum menganalisis.', 'warning');
+        return;
+      }
+      const analisisResults = analisisSemuaCP(cpData);
+      state.set('book.cpAnalisis', analisisResults);
+      this.refreshAnalisisCP(analisisResults);
+      
+      const totalKKO = analisisResults.reduce((sum, r) => sum + r.analisis.kompetensi.length, 0);
+      const totalTP = analisisResults.reduce((sum, r) => sum + r.analisis.tujuanPembelajaran.length, 0);
+      showToast(`🔬 Analisis selesai! ${totalKKO} KKO & ${totalTP} TP ditemukan.`, 'success');
+    });
+
+    // CP item editing & deletion
+    this.attachCPListeners();
+
+    // School level card selection (Kota, Pinggiran, Pelosok)
+    document.querySelectorAll('input[name="school-level"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        document.querySelectorAll('#school-level-grid .school-level-card').forEach(c => c.classList.remove('active'));
+        radio.closest('.school-level-card').classList.add('active');
       });
     });
   },
@@ -676,59 +581,7 @@ export default {
   },
 
   // ====== CP SCANNING HANDLER ======
-
-  async handleScanCP() {
-    const subject = document.getElementById('input-subject')?.value?.trim();
-    const classPhase = document.getElementById('input-classphase')?.value?.trim();
-
-    if (!subject) {
-      showToast('Isi Mata Pelajaran terlebih dahulu.', 'warning');
-      document.getElementById('input-subject')?.focus();
-      return;
-    }
-    if (!classPhase) {
-      showToast('Isi Fase / Kelas terlebih dahulu.', 'warning');
-      document.getElementById('input-classphase')?.focus();
-      return;
-    }
-
-    isScanningCP = true;
-    const btn = document.getElementById('btn-scan-cp');
-    const loading = document.getElementById('cp-scanning-loading');
-    btn.disabled = true;
-    btn.textContent = '⏳ Scanning...';
-    loading.style.display = 'block';
-
-    try {
-      const prompt = cpScanningPrompt(subject, classPhase);
-      const response = await generateText(prompt);
-      const data = parseJsonResponse(response);
-
-      if (data.cpList && Array.isArray(data.cpList)) {
-        const cpData = data.cpList.map((cp, idx) => ({
-          id: uid(),
-          code: cp.code || `CP-${idx + 1}`,
-          description: cp.description || '',
-          elemen: cp.elemen || '',
-          profilLulusan: cp.profilLulusan || [],
-        }));
-
-        state.set('book.cpData', cpData);
-        state.set('book.cpScanned', true);
-        showToast(`✅ Ditemukan ${cpData.length} Capaian Pembelajaran!`, 'success');
-        this.refreshCPResults();
-      } else {
-        throw new Error('Format respons AI tidak sesuai.');
-      }
-    } catch (err) {
-      showToast(`Gagal scanning CP: ${err.message}`, 'error');
-    } finally {
-      isScanningCP = false;
-      btn.disabled = false;
-      btn.textContent = state.get('book.cpData')?.length > 0 ? '🔄 Scan Ulang CP' : '🔬 Mulai Scanning CP';
-      loading.style.display = 'none';
-    }
-  },
+  // Diganti menggunakan auto-load dari cp-data.js
 
   refreshCPResults() {
     const container = document.getElementById('cp-results-container');
@@ -737,7 +590,7 @@ export default {
       container.innerHTML = cpData.length > 0 ? this.renderCPResults(cpData) : `
         <div class="cp-empty-hint" style="text-align:center; padding: var(--space-lg); color: var(--text-tertiary); font-size: var(--fs-sm);">
           <div style="font-size: 2rem; margin-bottom: var(--space-xs);">📋</div>
-          Belum ada CP. Isi mata pelajaran & fase di atas, lalu klik "Mulai Scanning CP".
+          Belum ada CP. Pilih Jenjang, Mata Pelajaran, dan Fase di atas agar CP termuat otomatis.
         </div>
       `;
       this.attachCPListeners();
@@ -748,6 +601,32 @@ export default {
       distBtn.disabled = cpData.length === 0;
       if (cpData.length === 0) distBtn.title = 'Scan CP terlebih dahulu';
       else distBtn.title = '';
+    }
+  },
+
+  /**
+   * Refresh the Analisis CP container
+   */
+  refreshAnalisisCP(analisisResults) {
+    const container = document.getElementById('analisis-cp-container');
+    if (!container) return;
+    
+    if (analisisResults && analisisResults.length > 0) {
+      container.innerHTML = this.renderAnalisisCP(analisisResults);
+    } else {
+      container.innerHTML = `
+        <div style="text-align:center; padding: var(--space-lg); color: var(--text-tertiary); font-size: var(--fs-sm);">
+          <div style="font-size: 2rem; margin-bottom: var(--space-xs);">🔬</div>
+          Klik tombol "Analisis CP Otomatis" setelah CP dimuat untuk membedah narasi CP.
+        </div>
+      `;
+    }
+    
+    // Update analisis button state
+    const btn = document.getElementById('btn-analisis-cp');
+    if (btn) {
+      const cpData = state.get('book.cpData') || [];
+      btn.disabled = cpData.length === 0;
     }
   },
 
@@ -796,76 +675,6 @@ export default {
     });
   },
 
-  // ====== DISTRIBUSI PERTEMUAN ======
-
-  updateAutoSumatifPreview() {
-    const total = parseInt(document.getElementById('input-total-pertemuan')?.value) || 12;
-    const jumlahSumatif = parseInt(document.getElementById('input-jumlah-sumatif')?.value) || 0;
-    const textEl = document.getElementById('sumatif-auto-text');
-    if (textEl) {
-      textEl.textContent = this.getAutoSumatifText(total, jumlahSumatif);
-    }
-  },
-
-  async handleGenerateDistribusi() {
-    const cpData = state.get('book.cpData') || [];
-    if (cpData.length === 0) {
-      showToast('Scan CP terlebih dahulu sebelum membuat distribusi.', 'warning');
-      return;
-    }
-
-    const totalPertemuan = parseInt(document.getElementById('input-total-pertemuan')?.value) || 12;
-    const jumlahSumatif = parseInt(document.getElementById('input-jumlah-sumatif')?.value) || 0;
-    const mode = state.get('book.modulAjarMode');
-
-    // Get sumatif positions
-    let sumatifPositions = [];
-    const posMode = document.querySelector('input[name="sumatif-pos-mode"]:checked')?.value;
-    if (posMode === 'custom') {
-      const customInput = document.getElementById('input-sumatif-positions')?.value || '';
-      sumatifPositions = customInput.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 1 && n <= totalPertemuan);
-      if (sumatifPositions.length !== jumlahSumatif && jumlahSumatif > 0) {
-        showToast(`Masukkan tepat ${jumlahSumatif} posisi sumatif.`, 'warning');
-        return;
-      }
-    } else {
-      sumatifPositions = this.calculateAutoSumatifPositions(totalPertemuan, jumlahSumatif);
-    }
-
-    state.set('book.sumatifPositions', sumatifPositions);
-    state.set('book.totalPertemuan', totalPertemuan);
-    state.set('book.jumlahSumatif', jumlahSumatif);
-
-    isDistributing = true;
-    const btn = document.getElementById('btn-generate-distribusi');
-    btn.disabled = true;
-    btn.textContent = '⏳ Membuat distribusi...';
-
-    try {
-      const prompt = distribusiPertemuanPrompt(cpData, totalPertemuan, jumlahSumatif, sumatifPositions, mode);
-      const response = await generateText(prompt);
-      const data = parseJsonResponse(response);
-
-      if (data.distribusi && Array.isArray(data.distribusi)) {
-        state.set('book.distribusiPertemuan', data.distribusi);
-        showToast(`✅ Distribusi ${data.distribusi.length} pertemuan berhasil!`, 'success');
-        
-        const previewContainer = document.getElementById('distribusi-preview');
-        if (previewContainer) {
-          previewContainer.innerHTML = this.renderDistribusiPreview(data.distribusi);
-        }
-      } else {
-        throw new Error('Format respons distribusi tidak sesuai.');
-      }
-    } catch (err) {
-      showToast(`Gagal membuat distribusi: ${err.message}`, 'error');
-    } finally {
-      isDistributing = false;
-      btn.disabled = false;
-      btn.textContent = '📊 Generate Distribusi Pertemuan';
-    }
-  },
-
   // ====== VALIDATION & DATA ======
 
   validate() {
@@ -878,13 +687,17 @@ export default {
     }
 
     if (book.targetRole === 'guru') {
-      if (!book.subject.trim()) {
-        showToast('Mata Pelajaran wajib diisi.', 'warning');
+      if (!book.jenjang) {
+        showToast('Pilih Jenjang Sekolah terlebih dahulu.', 'warning');
+        return false;
+      }
+      if (!book.subject) {
+        showToast('Pilih Mata Pelajaran terlebih dahulu.', 'warning');
         document.getElementById('input-subject')?.focus();
         return false;
       }
-      if (!book.classPhase.trim()) {
-        showToast('Fase / Kelas wajib diisi.', 'warning');
+      if (!book.classPhase) {
+        showToast('Pilih Fase terlebih dahulu.', 'warning');
         document.getElementById('input-classphase')?.focus();
         return false;
       }
@@ -898,11 +711,6 @@ export default {
       return false;
     }
 
-    // Validate modul ajar multi-pertemuan
-    if (book.modulAjarMode && book.cpData.length > 0 && book.distribusiPertemuan.length === 0) {
-      showToast('Mode Modul Ajar aktif tapi distribusi belum dibuat. Klik "Generate Distribusi Pertemuan" atau nonaktifkan mode.', 'warning');
-      return false;
-    }
 
     // Update project name
     let projName = book.docTypes.join('_').toUpperCase() + (book.topic ? ' - ' + book.topic : '');
@@ -924,45 +732,9 @@ export default {
     state.set('book.chapterLength', document.getElementById('input-length')?.value || 'sedang');
     state.set('book.referenceText', document.getElementById('input-reference')?.value || '');
     
-    // Jenjang & Semester (Phase 1)
+    // Jenjang & Semester
     state.set('book.jenjang', document.querySelector('input[name="jenjang"]:checked')?.value || '');
     state.set('book.semester', document.getElementById('input-semester')?.value || '1');
     state.set('book.tahunAjaran', document.getElementById('input-tahun-ajaran')?.value || '');
-
-    // Alokasi Waktu (Phase 2)
-    state.set('book.alokasiWaktu', {
-      durasiJP: parseInt(document.getElementById('input-durasi-jp')?.value) || 40,
-      jpPerPertemuan: parseInt(document.getElementById('input-jp-per-pertemuan')?.value) || 2,
-      jpPerMinggu: parseInt(document.getElementById('input-jp-per-minggu')?.value) || 4,
-      mingguEfektif: 18,
-    });
-
-    // Sumatif Config (Phase 3)
-    const enabledTypes = {};
-    const questionCount = {};
-    document.querySelectorAll('.sumatif-type-toggle').forEach(cb => {
-      enabledTypes[cb.dataset.type] = cb.checked;
-    });
-    document.querySelectorAll('.sumatif-count-input').forEach(input => {
-      questionCount[input.dataset.type] = parseInt(input.value) || 5;
-    });
-    state.set('book.sumatifConfig', {
-      enabledTypes,
-      questionCount,
-      pgOptionCount: parseInt(document.getElementById('input-pg-options')?.value) || 4,
-      difficultyLevel: document.querySelector('input[name="difficulty-level"]:checked')?.value || 'sedang',
-    });
-
-    // Model Pembelajaran (Phase 5)
-    const selectedModels = Array.from(document.querySelectorAll('input[name="model-pembelajaran"]:checked')).map(cb => cb.value);
-    state.set('book.modelPembelajaran', selectedModels);
-
-    // Modul ajar settings
-    const modulMode = document.querySelector('input[name="modul-ajar-mode"]:checked')?.value || null;
-    state.set('book.modulAjarMode', modulMode || null);
-    if (modulMode) {
-      state.set('book.totalPertemuan', parseInt(document.getElementById('input-total-pertemuan')?.value) || 12);
-      state.set('book.jumlahSumatif', parseInt(document.getElementById('input-jumlah-sumatif')?.value) || 0);
-    }
   },
 };

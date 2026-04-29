@@ -1,10 +1,11 @@
 // ============================================================
-// Wizard Module — 3-Step Navigation Controller
+// Wizard Module — 5-Step Navigation Controller
+// Steps: Isi Data → Susun ATP → KKTP & Asesmen → Generate → Download
 // ============================================================
 
 import { state } from '../state.js';
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 5;
 const stepModules = [];
 
 /**

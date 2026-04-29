@@ -38,10 +38,10 @@ export default {
             <span class="stat-label">CP Terverifikasi</span>
           </div>
         ` : ''}
-        ${book.modulAjarMode ? `
+        ${(book.distribusiPertemuan || []).length > 0 ? `
           <div class="stat-item">
-            <span class="stat-value">${book.modulAjarMode === 'tahunan' ? '1 Thn' : '1 Smt'}</span>
-            <span class="stat-label">${book.totalPertemuan || 0} Pertemuan</span>
+            <span class="stat-value">${(book.distribusiPertemuan || []).length}</span>
+            <span class="stat-label">Pertemuan</span>
           </div>
         ` : ''}
       </div>
@@ -162,7 +162,7 @@ export default {
           <div style="color: #8b5cf6; margin-bottom: 12px;">━━━━━━━━━━━━</div>
           <p style="font-style: italic; color: #777; font-size: 0.85rem;">${escapeHtml(book.subject || '')} ${book.classPhase ? '— ' + escapeHtml(book.classPhase) : ''}</p>
           ${book.cpScanned ? `<p style="margin-top: 8px; font-size: 0.75rem; color: #8b5cf6;">✅ ${(book.cpData || []).length} CP Terverifikasi</p>` : ''}
-          ${book.modulAjarMode ? `<p style="font-size: 0.75rem; color: #059669;">📅 ${book.modulAjarMode === 'tahunan' ? '1 Tahun' : '1 Semester'} · ${book.totalPertemuan} Pertemuan</p>` : ''}
+          ${(book.distribusiPertemuan || []).length > 0 ? `<p style="font-size: 0.75rem; color: #059669;">📅 ${(book.distribusiPertemuan || []).length} Pertemuan</p>` : ''}
           <p style="margin-top: 20px; color: #555;">Kurikulum Merdeka ${new Date().getFullYear()}</p>
         </div>
       `;
@@ -177,22 +177,89 @@ export default {
       html += `</div>`;
     }
 
-    chapters.slice(0, 2).forEach((ch, idx) => {
+    // Show all chapters with rendered markdown
+    chapters.forEach((ch, idx) => {
       const text = content[ch.id]?.text || '(belum di-generate)';
+      const renderedContent = this.markdownToHtml(text, settings);
       html += `
-        <div style="margin-bottom: 16px;">
+        <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06);">
           <p style="color: #8b5cf6; font-size: 0.7rem; font-weight: 700;">BAGIAN ${idx + 1}</p>
           <h2 style="font-family: ${settings.headingFont}; font-size: 1.1rem; margin-bottom: 8px;">${escapeHtml(ch.title)}</h2>
-          <p style="font-size: 0.78rem; line-height: 1.6; color: #444;">${escapeHtml(text.substring(0, 300))}${text.length > 300 ? '...' : ''}</p>
+          <div style="font-size: 0.78rem; line-height: 1.7; color: var(--text-secondary);">${renderedContent}</div>
         </div>
       `;
     });
 
-    if (chapters.length > 2) {
-      html += `<p style="text-align: center; color: #999; font-size: 0.75rem;">... dan ${chapters.length - 2} bagian lainnya</p>`;
-    }
-
     return html;
+  },
+
+  /**
+   * Convert markdown text to HTML for preview display
+   */
+  markdownToHtml(text, settings) {
+    if (!text || text === '(belum di-generate)') return '<em style="color:var(--text-tertiary);">(belum di-generate)</em>';
+    
+    return text
+      .split('\n')
+      .map(line => {
+        // Skip empty lines
+        if (!line.trim()) return '<br/>';
+        
+        // H4
+        if (line.startsWith('#### ')) {
+          const t = line.replace(/^####\s*/, '').replace(/\*\*/g, '');
+          return `<h5 style="font-family:${settings.headingFont}; font-size:0.8rem; font-weight:700; margin:8px 0 4px; color:var(--text-primary);">${escapeHtml(t)}</h5>`;
+        }
+        // H3
+        if (line.startsWith('### ')) {
+          const t = line.replace(/^###\s*/, '').replace(/\*\*/g, '');
+          return `<h4 style="font-family:${settings.headingFont}; font-size:0.85rem; font-weight:700; margin:10px 0 4px; color:var(--text-primary);">${escapeHtml(t)}</h4>`;
+        }
+        // H2
+        if (line.startsWith('## ')) {
+          const t = line.replace(/^##\s*/, '').replace(/\*\*/g, '');
+          return `<h3 style="font-family:${settings.headingFont}; font-size:0.95rem; font-weight:700; margin:12px 0 6px; color:var(--text-primary);">${escapeHtml(t)}</h3>`;
+        }
+        // Bullet
+        if (line.match(/^\s*[-*]\s/)) {
+          const indent = line.match(/^\s*/)[0].length > 1 ? 'margin-left:20px;' : 'margin-left:10px;';
+          const bullet = line.match(/^\s*/)[0].length > 1 ? '◦' : '•';
+          const t = line.replace(/^\s*[-*]\s*/, '');
+          return `<div style="font-size:0.78rem; ${indent} padding:1px 0;">${bullet} ${this.inlineFormat(t)}</div>`;
+        }
+        // Numbered
+        if (line.match(/^\d+\.\s/)) {
+          const t = line.replace(/^(\d+\.)\s*/, '<strong>$1</strong> ');
+          return `<div style="font-size:0.78rem; margin-left:10px; padding:1px 0;">${this.inlineFormat(t)}</div>`;
+        }
+        // Table row — render as simple grid
+        if (line.trim().startsWith('|')) {
+          if (line.trim().match(/^\|[\s:-]+\|/)) return ''; // separator row
+          const cells = line.split('|').slice(1, -1).map(c => `<td style="padding:2px 6px; border:1px solid rgba(255,255,255,0.1); font-size:0.72rem;">${this.inlineFormat(c.trim())}</td>`);
+          return `<tr>${cells.join('')}</tr>`;
+        }
+        // Regular paragraph
+        return `<p style="font-size:0.78rem; margin:2px 0; line-height:1.6;">${this.inlineFormat(line)}</p>`;
+      })
+      .join('')
+      // Wrap table rows
+      .replace(/(<tr>[\s\S]*?<\/tr>)/g, (match, p1, offset, str) => {
+        // Check if already inside a table
+        const before = str.substring(0, offset);
+        if (before.lastIndexOf('<table') > before.lastIndexOf('</table>')) return match;
+        // Find consecutive tr blocks
+        return `<table style="width:100%; border-collapse:collapse; margin:8px 0;">${match}</table>`;
+      });
+  },
+
+  /**
+   * Format inline markdown: **bold**, *italic*, `code`
+   */
+  inlineFormat(text) {
+    return text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code style="background:rgba(139,92,246,0.15); padding:1px 4px; border-radius:3px; font-size:0.72rem;">$1</code>');
   },
 
   init() {

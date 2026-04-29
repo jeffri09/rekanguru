@@ -21,41 +21,41 @@ const docTypeLabels = {
 // Template outline spesifik per docType
 const docTypeOutlineTemplates = {
   modul_ajar: [
-    'Informasi Umum (Identitas Modul, Kompetensi Awal, Profil Pelajar Pancasila, Sarana & Prasarana, Target Peserta Didik, Model Pembelajaran)',
-    'Komponen Inti (Tujuan Pembelajaran, Pemahaman Bermakna, Pertanyaan Pemantik, Persiapan Pembelajaran)',
-    'Kegiatan Pembelajaran (Pendahuluan/Apersepsi, Inti/Deep Learning, Penutup/Refleksi)',
-    'Asesmen (Diagnostik Awal, Formatif Proses, Sumatif Akhir, Rubrik Penilaian)',
+    'Informasi Umum (Identitas Modul, Fase, Alokasi Waktu, Profil Pelajar Pancasila, Sarana & Prasarana, Target Peserta Didik, Model Pembelajaran)',
+    'Tahap 1-2: Analisis CP & Tujuan Pembelajaran (Bedah KKO & Lingkup Materi → Rumusan TP → Pemahaman Bermakna & Pertanyaan Pemantik)',
+    'Tahap 3: KKTP — Kriteria Ketercapaian TP (Rubrik Kualitatif: Baru Berkembang / Layak / Cakap / Mahir)',
+    'Tahap 4: Asesmen (Asesmen Awal/Diagnostik, Asesmen Formatif/Proses, Asesmen Sumatif/Akhir, Rubrik Penilaian & Pedoman Penskoran)',
+    'Tahap 5: Kegiatan Pembelajaran — Deep Learning (Pendahuluan + Asesmen Awal, Inti: Eksplorasi & Kolaborasi, Penutup: Refleksi & Asesmen Formatif)',
     'Pengayaan & Remidial (Kegiatan Pengayaan, Program Remidial, Diferensiasi)',
     'Lampiran (LKPD, Bahan Bacaan, Glosarium, Daftar Pustaka)',
   ],
   atp: [
-    'Analisis Capaian Pembelajaran (CP) per Fase',
-    'Penjabaran Tujuan Pembelajaran dari setiap CP',
-    'Alur / Urutan Tujuan Pembelajaran (Matriks ATP)',
-    'Indikator Pencapaian & Profil Lulusan Terkait',
-    'Pemetaan Asesmen per Tujuan Pembelajaran',
+    'Tahap 1: Analisis CP — Bedah Kalimat (Kompetensi/KKO & Lingkup Materi per Fase)',
+    'Tahap 2: Perumusan Tujuan Pembelajaran (TP) dari setiap CP',
+    'Alur Tujuan Pembelajaran (Matriks ATP — urutan konkret ke abstrak)',
+    'KKTP & Indikator Pencapaian per TP',
+    'Profil Lulusan Terkait & Pemetaan Asesmen per TP',
   ],
   prota: [
     'Identitas Program Tahunan',
     'Analisis Kalender Pendidikan & Minggu Efektif',
-    'Distribusi Materi per Semester (Matriks Alokasi)',
+    'Distribusi TP per Semester (Matriks Alokasi dari ATP)',
     'Rencana Asesmen Tahunan',
     'Catatan & Penyesuaian',
   ],
   promes: [
     'Identitas Program Semester',
-    'Distribusi Materi per Bulan/Minggu (Matriks)',
-    'Alokasi Waktu Detail per Topik',
+    'Distribusi TP per Bulan/Minggu (Matriks dari ATP)',
+    'Alokasi Waktu Detail per TP/Topik',
     'Jadwal Asesmen Formatif & Sumatif',
     'Hari Efektif & Non-Efektif',
   ],
   assesmen: [
-    'Kisi-Kisi Asesmen (Matriks CP-TP-Indikator)',
-    'Instrumen Asesmen Diagnostik',
-    'Instrumen Asesmen Formatif (Proses)',
-    'Instrumen Asesmen Sumatif (Akhir)',
-    'Rubrik Penilaian & Pedoman Penskoran',
-    'Analisis Butir Soal & Validitas',
+    'Kisi-Kisi Asesmen (Matriks CP → TP → KKTP → Indikator)',
+    'Instrumen Asesmen Awal/Diagnostik (Pemetaan Prior Knowledge)',
+    'Instrumen Asesmen Formatif (Pemantauan Proses — Pertanyaan Pemantik & Observasi)',
+    'Instrumen Asesmen Sumatif (Akhir — Tegak Lurus dengan KKTP)',
+    'Rubrik Penilaian Kualitatif (Baru Berkembang / Layak / Cakap / Mahir) & Pedoman Penskoran',
   ],
   jurnal: [
     'Format Jurnal Mengajar Harian',
@@ -132,6 +132,44 @@ function formatCpDataForPrompt(cpData) {
 }
 
 /**
+ * Format CP Analysis results for prompt injection
+ */
+function formatCPAnalisisForPrompt(cpAnalisis) {
+  if (!cpAnalisis || cpAnalisis.length === 0) return '';
+  
+  let text = '\n🔬 HASIL ANALISIS NARASI CP (BEDAH KALIMAT):\n';
+  text += '══════════════════════════════════════════════\n';
+  
+  for (const result of cpAnalisis) {
+    text += `\n${result.cpCode}:\n`;
+    
+    if (result.analisis.kompetensi.length > 0) {
+      text += '  📌 Kompetensi (KKO):\n';
+      for (const k of result.analisis.kompetensi) {
+        text += `    • ${k.kataKerja} [${k.levelLabel}]\n`;
+      }
+    }
+    
+    if (result.analisis.lingkupMateri.length > 0) {
+      text += '  📚 Lingkup Materi:\n';
+      for (const m of result.analisis.lingkupMateri) {
+        text += `    • ${m.topik}\n`;
+      }
+    }
+    
+    if (result.analisis.tujuanPembelajaran.length > 0) {
+      text += '  🎯 Rumusan TP:\n';
+      for (const tp of result.analisis.tujuanPembelajaran) {
+        text += `    • [${tp.levelBloom}] ${tp.tp}\n`;
+      }
+    }
+  }
+  
+  text += '\n══════════════════════════════════════════════\n';
+  return text;
+}
+
+/**
  * Format distribusi pertemuan for prompt injection
  */
 function formatDistribusiForPrompt(distribusi) {
@@ -141,9 +179,10 @@ function formatDistribusiForPrompt(distribusi) {
   text += '══════════════════════════════════════════════\n';
   distribusi.forEach(p => {
     if (p.type === 'sumatif') {
-      text += `  Pertemuan ${p.pertemuan}: 📝 SUMATIF HARIAN (Evaluasi CP sebelumnya)\n`;
+      text += `  Pertemuan ${p.pertemuan}: 📝 SUMATIF HARIAN\n`;
     } else {
-      text += `  Pertemuan ${p.pertemuan}: 📚 ${p.cpTitle || 'Materi CP'}\n`;
+      const tpNames = (p.tpList || []).map(t => t.tp || '').filter(Boolean).join('; ');
+      text += `  Pertemuan ${p.pertemuan}: 📚 ${tpNames || 'Materi CP'}\n`;
     }
   });
   text += '══════════════════════════════════════════════\n';
@@ -348,6 +387,7 @@ export function outlinePrompt(book) {
   const docLabels = getDocLabels(book.docTypes);
   const schoolCtx = getSchoolContext(book.schoolLevel);
   const cpText = formatCpDataForPrompt(book.cpData);
+  const cpAnalisisText = formatCPAnalisisForPrompt(book.cpAnalisis);
   const distribusiText = formatDistribusiForPrompt(book.distribusiPertemuan);
   
   // Get template hints per docType
@@ -375,6 +415,7 @@ Fase/Kelas: ${book.classPhase || '-'}
 
 ${schoolCtx}
 ${cpText}
+${cpAnalisisText}
 ${distribusiText}
 ${templateHints}
 `;
@@ -393,11 +434,11 @@ ${templateHints}
     prompt += `\nMATERIAL REFERENSI & RAG CONTEXT (Jadikan acuan utama format/isi):\n${book.referenceText}\n`;
   }
 
-  // Multi-pertemuan mode
-  if (book.modulAjarMode && book.distribusiPertemuan?.length > 0) {
-    prompt += `\nMODE MODUL AJAR MULTI-PERTEMUAN:
-Dokumen ini adalah Modul Ajar untuk ${book.modulAjarMode === 'tahunan' ? '1 Tahun' : '1 Semester'} dengan ${book.totalPertemuan} pertemuan.
-Setiap pertemuan HARUS menjadi 1 chapter terpisah berdasarkan distribusi yang sudah diberikan.
+  // Multi-pertemuan mode (always active when distribusi exists)
+  if (book.distribusiPertemuan?.length > 0) {
+    prompt += `\nMODE MULTI-PERTEMUAN:
+Dokumen ini mencakup ${book.distribusiPertemuan.length} pertemuan dalam 1 semester.
+Setiap pertemuan HARUS menjadi 1 chapter terpisah berdasarkan distribusi TP yang sudah diberikan.
 Untuk pertemuan SUMATIF, buatkan chapter berisi: Kisi-kisi, Soal, Rubrik Penilaian.\n`;
   }
 
@@ -408,12 +449,54 @@ Untuk pertemuan SUMATIF, buatkan chapter berisi: Kisi-kisi, Soal, Rubrik Penilai
 
   prompt += `
 CHAIN OF THOUGHT (CoT) & TREE OF THOUGHTS (ToT):
-Berpikirlah selangkah demi selangkah:
-1. Pahami esensi Kurikulum Merdeka (Pendekatan Deep Learning, bukan sekadar hafalan).
-${book.cpScanned ? '2. Gunakan CP yang sudah diberikan sebagai FONDASI utama kerangka.' : '2. Pikirkan CP yang paling relevan untuk mata pelajaran dan fase ini.'}
-3. Jika ada lebih dari satu jenis dokumen (${docLabels}), urutkan logika perencanaannya (misal: ATP dulu, lalu Modul Ajar).
-4. Alokasikan komponen (bab) dokumen secara proporsional. Buat sebanyak yang diperlukan (idealnya 3-7 komponen per jenis dokumen).
-5. PENTING: Sesuaikan semua aktivitas, media, dan metode dengan LEVEL SEKOLAH!
+Berpikirlah selangkah demi selangkah mengikuti ALUR PEDAGOGIS 6 TAHAP:
+
+TAHAP 1 — ANALISIS CP (Bedah Kalimat):
+- CP ditulis dalam bentuk paragraf naratif. Lakukan "bedah kalimat" untuk menemukan:
+  a) Kompetensi: Kata kerja operasional (misal: mengidentifikasi, menganalisis, merancang).
+  b) Lingkup Materi: Topik atau konsep utama yang harus dikuasai.
+${book.cpAnalisis && book.cpAnalisis.length > 0 ? '- GUNAKAN hasil analisis CP (KKO + Lingkup Materi + Rumusan TP) yang sudah diberikan di atas sebagai fondasi. JANGAN buat ulang.' : '- Lakukan bedah kalimat CP secara mandiri. Contoh: "Peserta didik mengidentifikasi sistem organ tubuh manusia" → KKO: mengidentifikasi (C1), Materi: sistem organ tubuh manusia.'}
+
+TAHAP 2 — KONSTRUKSI JEMBATAN (Perumusan TP & ATP):
+- Perumusan TP: Gabungkan KKO + Materi hasil bedah CP menjadi kalimat tunggal.
+  Contoh: "Mengidentifikasi fungsi organ pencernaan manusia", "Menganalisis penyebab gangguan pada sistem pencernaan".
+- Penyusunan ATP: Susun TP-TP secara logis, berurutan dari materi konkret ke abstrak, hierarki dasar ke kompleks.
+  Tentukan TP mana untuk semester 1 dan TP mana untuk semester 2.
+- Pemetaan Waktu (Prota & Promes): Hitung minggu efektif, distribusikan TP ke dalam Promes lengkap dengan alokasi JP.
+
+TAHAP 3 — PERENCANAAN MIKRO (Backward Design):
+- Fokus pada 1 TP dari Promes.
+- Menyusun KKTP (Kriteria Ketercapaian TP): BUKAN angka KKM, melainkan KRITERIA MUTU yang observable.
+  Pertanyaan kunci: "Bagaimana saya tahu peserta didik sudah berhasil [TP ini]?"
+  Contoh KKTP untuk TP "Menganalisis penyebab gangguan pencernaan":
+  • Kriteria 1: Mampu menyebutkan 3 jenis penyakit pencernaan.
+  • Kriteria 2: Mampu menguraikan hubungan pola makan dengan penyakit maag.
+  • Kriteria 3: Mampu menyajikan solusi pencegahan dalam bentuk peta pikiran.
+- Gunakan rubrik kualitatif: Baru Berkembang → Layak → Cakap → Mahir.
+
+TAHAP 4 — MENDESAIN ALAT UKUR (Asesmen):
+- Berdasarkan KKTP, buat instrumen penilaian SEBELUM merancang kegiatan belajar.
+  a) Asesmen Sumatif (Akhir Materi): Soal/penugasan tegak lurus dengan setiap kriteria KKTP.
+     Contoh: Proyek poster mini, soal uraian menganalisis studi kasus.
+  b) Asesmen Formatif (Pemantauan Proses): Pertanyaan pemantik atau lembar observasi di tengah pembelajaran.
+  c) Asesmen Awal (Pemetaan): 2-3 pertanyaan lisan ringan sebelum materi dimulai untuk mengetahui prior knowledge.
+
+TAHAP 5 — MENDESAIN PENGALAMAN BELAJAR (Deep Learning):
+- Karena sudah tahu ujian akhir (Sumatif) dan indikator (KKTP), rancang skenario kelas:
+  a) Kegiatan Pendahuluan: Asesmen Awal + Meaningful Learning (tarik perhatian, hubungkan dengan kehidupan nyata).
+  b) Kegiatan Inti (Eksplorasi & Kolaborasi): BUKAN sekadar ceramah.
+     Fasilitasi aktivitas yang memicu Penalaran Kritis dan Kolaborasi (Dimensi Profil Lulusan).
+     Contoh: Kelompok kecil + LKPD berisi studi kasus → analisis bersama = Deep Learning.
+  c) Kegiatan Penutup: Asesmen Formatif (kuis lisan/refleksi) + simpulkan materi + tanamkan dimensi Profil Lulusan.
+
+TAHAP 6 — EKSEKUSI DOKUMEN (Modul Ajar):
+- Satukan komponen Tahap 3, 4, dan 5 ke dalam format dokumen yang diminta:
+  a) Identitas Modul (Nama lembaga, Fase, Alokasi Waktu).
+  b) TP dan KKTP (Dari Tahap 3).
+  c) Profil Lulusan yang disasar (Dari Tahap 5).
+  d) Langkah Pembelajaran lengkap (Dari Tahap 5).
+  e) Instrumen Asesmen & Lampiran LKPD (Dari Tahap 4 & 5).
+- Pastikan konsistensi antar-tahap: TP → KKTP → Asesmen → Kegiatan semua HARUS saling merujuk.
 
 CROSS-REFERENCE INSTRUCTION:
 Jika bundel dokumen terdiri dari >1 jenis (misal ATP + Modul Ajar + Promes), pastikan:
@@ -461,6 +544,7 @@ export function chapterPrompt(book, chapter, chapterIndex, prevSummary, totalCha
   const roleName = book.targetRole === 'guru' ? 'Guru' : 'Kepala Sekolah';
   const schoolCtx = getSchoolContext(book.schoolLevel);
   const cpText = formatCpDataForPrompt(book.cpData);
+  const cpAnalisisText = formatCPAnalisisForPrompt(book.cpAnalisis);
 
   const lengthMap = {
     pendek: 'singkat, berfokus pada tabel atau poin-poin padat (sekitar 300-500 kata).',
@@ -488,28 +572,28 @@ export function chapterPrompt(book, chapter, chapterIndex, prevSummary, totalCha
     formatInstructions += `\nFORMAT KHUSUS MODUL AJAR: Sertakan langkah pembelajaran dengan ESTIMASI MENIT per aktivitas. Contoh: "Pendahuluan (10 menit)", "Kegiatan Inti (60 menit)", "Penutup (10 menit)". Gunakan tabel untuk rubrik.\n`;
   }
 
-  // Check if this chapter is a multi-meeting chapter
+  // Check if this chapter corresponds to a distribusi pertemuan
   let meetingContext = '';
-  if (book.modulAjarMode && book.distribusiPertemuan?.length > 0) {
+  if (book.distribusiPertemuan?.length > 0) {
     const meetingData = book.distribusiPertemuan[chapterIndex];
     if (meetingData) {
       if (meetingData.type === 'sumatif') {
         const sumatifConfigText = formatSumatifConfigForPrompt(book.sumatifConfig);
         meetingContext = `\n🔴 INI ADALAH PERTEMUAN SUMATIF HARIAN (Pertemuan ${meetingData.pertemuan})
-Tugas: Buatkan instrumen sumatif harian lengkap yang mengevaluasi materi dari pertemuan sebelumnya.
+Tugas: Buatkan instrumen sumatif harian lengkap yang mengevaluasi TP dari pertemuan sebelumnya.
 ${sumatifConfigText}
 Isi Wajib:
 1. Kisi-kisi soal (tabel: No, Indikator, Level Kognitif, Bentuk Soal, No Soal)
-2. Soal lengkap sesuai KOMPOSISI di atas (jangan lebih, jangan kurang!)
+2. Soal lengkap sesuai KOMPOSISI di atas
 3. Kunci jawaban & pedoman penskoran
 4. Rubrik penilaian (tabel: Skor, Deskriptor)
 5. Tindak lanjut (pengayaan & remidial)
-CP yang dievaluasi: ${meetingData.details || 'CP dari pertemuan sebelumnya'}
 `;
       } else {
-        meetingContext = `\n📚 PERTEMUAN KE-${meetingData.pertemuan} (Pembelajaran CP)
-Materi: ${meetingData.title || meetingData.details || 'Sesuai CP'}
-Detail: ${meetingData.details || ''}
+        const tpNames = (meetingData.tpList || []).map(t => `[${t.levelBloom || '?'}] ${t.tp || ''}`).join('\n  - ');
+        meetingContext = `\n📚 PERTEMUAN KE-${meetingData.pertemuan} (Pembelajaran)
+Tujuan Pembelajaran yang dibahas:
+  - ${tpNames || 'Sesuai CP'}
 Buatkan modul ajar lengkap untuk 1 pertemuan ini dengan alokasi waktu detail per menit.
 `;
       }
@@ -521,6 +605,7 @@ Kamu adalah ${roleName} Profesional, Ahli Kurikulum Merdeka 2026, dan penulis do
 
 ${schoolCtx}
 ${cpText}
+${cpAnalisisText}
 
 IDENTITAS PROYEK:
 Topik/Capaian: "${book.topic || 'Sesuai dengan CP yang telah diidentifikasi'}"

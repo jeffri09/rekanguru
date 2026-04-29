@@ -282,7 +282,7 @@ input, select, textarea {
   display: flex;
   justify-content: space-between;
   position: relative;
-  max-width: 700px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
@@ -2715,5 +2715,652 @@ input, select, textarea {
 .settings-profile-section[open] summary {
   color: var(--text-accent);
   margin-bottom: var(--space-md);
+}
+
+/* ============================================================
+   ATP MODULE — Alur Tujuan Pembelajaran (Step 2)
+   ============================================================ */
+
+/* ATP Info Card */
+.atp-info-card {
+  background: rgba(59, 130, 246, 0.05);
+  border-color: rgba(59, 130, 246, 0.15);
+}
+
+.atp-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md);
+}
+
+.atp-info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.atp-info-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.atp-info-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ATP TP Items List */
+.atp-tp-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.atp-tp-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
+  cursor: grab;
+}
+
+.atp-tp-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.atp-tp-item.dragging {
+  opacity: 0.4;
+  transform: scale(0.98);
+  border-color: var(--accent-primary);
+}
+
+.atp-tp-item.drag-over {
+  border-color: var(--accent-primary);
+  background: rgba(139, 92, 246, 0.08);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+.atp-tp-item.atp-sem2 {
+  border-left: 3px solid #3b82f6;
+}
+
+.atp-tp-item.atp-sem1 {
+  border-left: 3px solid #10b981;
+}
+
+.atp-tp-drag-handle {
+  color: var(--text-tertiary);
+  cursor: grab;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0.4;
+  transition: opacity var(--transition-fast);
+}
+
+.atp-tp-item:hover .atp-tp-drag-handle {
+  opacity: 1;
+}
+
+.atp-tp-order {
+  min-width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--accent-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.atp-tp-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.atp-tp-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.atp-tp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.atp-bloom-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.atp-materi-badge {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  padding: 2px 6px;
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: 8px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.atp-cp-badge {
+  font-size: 0.6rem;
+  color: var(--text-tertiary);
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.atp-tp-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.atp-semester-select {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.7rem;
+  padding: 4px 6px;
+  cursor: pointer;
+  outline: none;
+}
+
+.atp-semester-select:focus {
+  border-color: var(--accent-primary);
+}
+
+.atp-semester-select option {
+  background: var(--bg-secondary);
+}
+
+.atp-move-btn,
+.atp-delete-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 0.65rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.atp-move-btn:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--accent-primary);
+}
+
+.atp-move-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+.atp-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+/* ATP Timeline */
+.atp-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.atp-timeline-section {
+  position: relative;
+}
+
+.atp-timeline-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.atp-timeline-sem-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.atp-timeline-sem-badge.sem1 {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.atp-timeline-sem-badge.sem2 {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.atp-timeline-count {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+.atp-timeline-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 8px;
+}
+
+.atp-timeline-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  position: relative;
+  padding: 6px 0;
+}
+
+.atp-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  z-index: 1;
+  box-shadow: 0 0 6px rgba(139, 92, 246, 0.3);
+}
+
+.atp-timeline-line {
+  position: absolute;
+  left: 12px;
+  top: 20px;
+  bottom: -8px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.atp-timeline-item:last-child .atp-timeline-line {
+  display: none;
+}
+
+.atp-timeline-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.78rem;
+  flex: 1;
+}
+
+.atp-timeline-order {
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.atp-timeline-text {
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.atp-timeline-bloom {
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   KKTP & ASESMEN MODULE — Backward Design (Step 3)
+   ============================================================ */
+
+/* Backward Design Reminder Card */
+.kktp-backward-card {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.06) 0%, rgba(6, 182, 212, 0.06) 100%);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.kktp-backward-content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.kktp-backward-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.kktp-backward-text {
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+/* KKTP Per-TP Card */
+.kktp-tp-card {
+  transition: all var(--transition-base);
+}
+
+.kktp-tp-card.kktp-completed {
+  border-color: rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.03);
+}
+
+.kktp-tp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.kktp-tp-info {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  flex: 1;
+}
+
+.kktp-tp-order {
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.12);
+  color: var(--accent-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.kktp-tp-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.kktp-tp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.kktp-status-done {
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  font-weight: 600;
+}
+
+.kktp-status-pending {
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.kktp-tp-actions {
+  display: flex;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+/* KKTP Content */
+.kktp-content {
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.kktp-empty {
+  padding: var(--space-md);
+  text-align: center;
+}
+
+.kktp-criteria-section {
+  animation: fadeSlideIn 0.3s ease;
+}
+
+.kktp-criteria-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-sm);
+}
+
+.kktp-criteria-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--space-md);
+}
+
+.kktp-criteria-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.kktp-criteria-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.kktp-criteria-num {
+  min-width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.kktp-criteria-text {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  flex: 1;
+  outline: none;
+  border-radius: 4px;
+  padding: 2px 4px;
+  transition: background var(--transition-fast);
+}
+
+.kktp-criteria-text:focus {
+  background: rgba(139, 92, 246, 0.1);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+/* Rubrik Kualitatif */
+.kktp-rubrik {
+  margin-top: var(--space-sm);
+}
+
+.kktp-rubrik-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-sm);
+}
+
+.kktp-rubrik-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.kktp-rubrik-level {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.kktp-rubrik-level.kktp-bb {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.kktp-rubrik-level.kktp-l {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+.kktp-rubrik-level.kktp-c {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+.kktp-rubrik-level.kktp-m {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.kktp-rubrik-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.kktp-rubrik-level.kktp-bb .kktp-rubrik-label { color: #f87171; }
+.kktp-rubrik-level.kktp-l .kktp-rubrik-label { color: #fbbf24; }
+.kktp-rubrik-level.kktp-c .kktp-rubrik-label { color: #60a5fa; }
+.kktp-rubrik-level.kktp-m .kktp-rubrik-label { color: #34d399; }
+
+.kktp-rubrik-desc {
+  font-size: 0.6rem;
+  color: var(--text-tertiary);
+}
+
+/* KKTP Manual Form */
+.kktp-manual-form {
+  padding: var(--space-sm) 0;
+}
+
+.kktp-manual-textarea {
+  font-size: 0.85rem;
+}
+
+/* Alignment Table */
+.kktp-alignment-table {
+  overflow-x: auto;
+}
+
+.kktp-alignment-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.kktp-alignment-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.kktp-alignment-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.kktp-alignment-table tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* ============================================================
+   RESPONSIVE — ATP & KKTP
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .atp-tp-item {
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+
+  .atp-tp-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .atp-tp-drag-handle {
+    display: none;
+  }
+
+  .atp-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kktp-tp-header {
+    flex-direction: column;
+  }
+
+  .kktp-rubrik-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .kktp-alignment-table {
+    font-size: 0.7rem;
+  }
 }
 

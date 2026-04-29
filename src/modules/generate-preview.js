@@ -14,6 +14,7 @@ let activeChapterId = null;
 
 export default {
   render() {
+    const book = state.get('book');
     const chapters = state.get('outline.chapters') || [];
     const content = state.get('content') || {};
     const generatedCount = chapters.filter(ch => content[ch.id]?.generated).length;
@@ -26,7 +27,64 @@ export default {
 
     return `
       <h2 class="step-title">⚡ Generate & Preview</h2>
-      <p class="step-subtitle">AI akan membuat kerangka dan menulis semua konten secara otomatis. Anda bisa mengedit hasilnya.</p>
+      <p class="step-subtitle">Konfigurasikan parameter AI lalu generate konten dokumen secara otomatis.</p>
+
+      <!-- ====== MODEL PEMBELAJARAN (Moved from Step 1) ====== -->
+      <div class="card" style="margin-bottom: var(--space-lg);" id="model-pembelajaran-card">
+        <div class="card-header">
+          <h3 class="card-title">🧪 Model/Metode Pembelajaran</h3>
+          <span class="badge badge-green">Opsional</span>
+        </div>
+        <p class="form-hint" style="margin-bottom: var(--space-md);">Pilih 1-3 model. AI akan menyesuaikan langkah pembelajaran dan asesmen.</p>
+        <div class="school-level-grid" id="model-pembelajaran-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+          ${[
+            { value: 'pbl', icon: '🔬', label: 'Problem Based Learning' },
+            { value: 'pjbl', icon: '📐', label: 'Project Based Learning' },
+            { value: 'discovery', icon: '🔍', label: 'Discovery Learning' },
+            { value: 'inquiry', icon: '❓', label: 'Inquiry Based Learning' },
+            { value: 'cooperative', icon: '🤝', label: 'Cooperative Learning' },
+            { value: 'direct', icon: '📚', label: 'Direct Instruction' },
+            { value: 'differentiated', icon: '🎯', label: 'Differentiated Instruction' },
+          ].map(m => `
+            <label class="school-level-card ${(book.modelPembelajaran || []).includes(m.value) ? 'active' : ''}" style="padding: 10px;">
+              <input type="checkbox" name="model-pembelajaran" value="${m.value}" 
+                ${(book.modelPembelajaran || []).includes(m.value) ? 'checked' : ''} hidden />
+              <div class="school-level-icon">${m.icon}</div>
+              <div class="school-level-title" style="font-size: 0.75rem;">${m.label}</div>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- ====== DETAIL MATERI (Moved from Step 1) ====== -->
+      <div class="card" style="margin-bottom: var(--space-lg);">
+        <div class="card-header">
+          <h3 class="card-title">📋 Detail & Parameter Generate</h3>
+          <span class="badge badge-green">Opsional</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="input-topic">Topik / Materi <small style="color:var(--text-tertiary); font-weight:normal;">(Kosongkan agar AI menentukan otomatis dari CP)</small></label>
+          <input class="form-input" id="input-topic" type="text" placeholder="Contoh: Sistem Pernapasan Manusia..." value="${book.topic || ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="input-desc">Catatan Khusus <small style="color:var(--text-tertiary); font-weight:normal;">(Opsional)</small></label>
+          <textarea class="form-textarea" id="input-desc" placeholder="Contoh: Fokus pada siswa inklusi, tambahkan kegiatan outdoor...">${book.description || ''}</textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="input-length">Kedalaman Penjabaran</label>
+            <select class="form-select" id="input-length">
+              <option value="pendek" ${book.chapterLength === 'pendek' ? 'selected' : ''}>📄 Singkat / Poin-poin</option>
+              <option value="sedang" ${book.chapterLength === 'sedang' ? 'selected' : ''}>📑 Sedang / Cukup Detail</option>
+              <option value="panjang" ${book.chapterLength === 'panjang' ? 'selected' : ''}>📚 Sangat Detail & Komprehensif</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="input-reference">Material Referensi <small style="color:var(--text-tertiary); font-weight:normal;">(Opsional — paste silabus, CP, dll.)</small></label>
+          <textarea class="form-textarea" id="input-reference" placeholder="Paste copy dokumen referensi di sini..." style="min-height: 80px;">${book.referenceText || ''}</textarea>
+        </div>
+      </div>
 
       <div class="stats-bar">
         <div class="stat-item">
@@ -124,19 +182,48 @@ export default {
   },
 
   init() {
-    // Generate All button
-    document.getElementById('btn-generate-all')?.addEventListener('click', () => this.generateAll());
+    // ====== MODEL PEMBELAJARAN TOGGLE ======
+    document.querySelectorAll('#model-pembelajaran-grid .school-level-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const cb = card.querySelector('input[type="checkbox"]');
+        cb.checked = !cb.checked;
+        card.classList.toggle('active', cb.checked);
+        const checked = document.querySelectorAll('#model-pembelajaran-grid input[type="checkbox"]:checked');
+        if (checked.length > 3) {
+          cb.checked = false;
+          card.classList.remove('active');
+          showToast('Maksimal 3 model pembelajaran.', 'warning');
+        }
+        const selected = [...document.querySelectorAll('#model-pembelajaran-grid input[type="checkbox"]:checked')].map(c => c.value);
+        state.set('book.modelPembelajaran', selected);
+      });
+    });
 
-    // Stop button
+    // ====== DETAIL MATERI INPUTS ======
+    document.getElementById('input-topic')?.addEventListener('change', (e) => {
+      state.set('book.topic', e.target.value);
+    });
+    document.getElementById('input-desc')?.addEventListener('change', (e) => {
+      state.set('book.description', e.target.value);
+    });
+    document.getElementById('input-length')?.addEventListener('change', (e) => {
+      state.set('book.chapterLength', e.target.value);
+    });
+    document.getElementById('input-reference')?.addEventListener('change', (e) => {
+      state.set('book.referenceText', e.target.value);
+    });
+
+    // ====== GENERATE & STOP BUTTONS ======
+    document.getElementById('btn-generate-all')?.addEventListener('click', () => this.generateAll());
     document.getElementById('btn-stop-gen')?.addEventListener('click', () => {
       shouldStop = true;
       showToast('Menghentikan setelah bagian saat ini selesai...', 'warning');
     });
 
-    // Sidebar clicks
+    // ====== SIDEBAR ======
     this.attachSidebarListeners();
 
-    // Textarea auto-save
+    // ====== TEXTAREA AUTO-SAVE ======
     const textarea = document.getElementById('gp-textarea');
     if (textarea) {
       let saveTimer;
@@ -146,7 +233,7 @@ export default {
       });
     }
 
-    // Regenerate button
+    // Regenerate section
     document.getElementById('btn-regen-section')?.addEventListener('click', () => this.regenerateSection());
   },
 
@@ -228,24 +315,25 @@ export default {
     try {
       // PHASE 1: Generate outline if no chapters yet
       if (chapters.length === 0) {
-        // Check if multi-pertemuan mode is active
-        const modulAjarMode = book.modulAjarMode;
         const distribusi = book.distribusiPertemuan || [];
 
-        if (modulAjarMode && distribusi.length > 0) {
+        if (distribusi.length > 0) {
           // Build chapters from distribusi pertemuan
           this.updateStatus('Membuat kerangka dari distribusi pertemuan...');
-          chapters = distribusi.map(p => ({
-            id: uid(),
-            title: p.type === 'sumatif' 
-              ? `Pertemuan ${p.pertemuan}: ${p.title || 'Sumatif Harian'}` 
-              : `Pertemuan ${p.pertemuan}: ${p.title || 'Pembelajaran CP'}`,
-            sections: p.type === 'sumatif' 
-              ? ['Kisi-kisi', 'Soal Sumatif', 'Kunci Jawaban', 'Rubrik Penilaian', 'Tindak Lanjut']
-              : ['Tujuan Pembelajaran', 'Pemahaman Bermakna', 'Pertanyaan Pemantik', 'Kegiatan Pembelajaran', 'Asesmen Formatif', 'Refleksi'],
-            meetingType: p.type,
-            meetingData: p,
-          }));
+          chapters = distribusi.map(p => {
+            const tpNames = (p.tpList || []).map(t => t.tp || '').filter(Boolean).join(', ');
+            return {
+              id: uid(),
+              title: p.type === 'sumatif' 
+                ? `Pertemuan ${p.pertemuan}: Sumatif Harian` 
+                : `Pertemuan ${p.pertemuan}: ${tpNames || 'Pembelajaran'}`,
+              sections: p.type === 'sumatif' 
+                ? ['Kisi-kisi', 'Soal Sumatif', 'Kunci Jawaban', 'Rubrik Penilaian', 'Tindak Lanjut']
+                : ['Tujuan Pembelajaran', 'Pemahaman Bermakna', 'Pertanyaan Pemantik', 'Kegiatan Pembelajaran', 'Asesmen Formatif', 'Refleksi'],
+              meetingType: p.type,
+              meetingData: p,
+            };
+          });
           state.set('outline.chapters', chapters);
           showToast(`Kerangka ${chapters.length} pertemuan berhasil dibuat!`, 'success');
         } else {

@@ -29,12 +29,9 @@ const initialState = {
     cpData: [],         // Array of { id, code, description, profilLulusan[] }
     cpScanned: false,   // Whether CP has been scanned
 
-    // Modul Ajar Multi-Pertemuan
-    modulAjarMode: null,      // null | 'tahunan' | 'semester'
-    totalPertemuan: 12,       // 12-16 (tahunan) or 6-8 (semester)
-    jumlahSumatif: 0,         // 0-6 sumatif slots
-    sumatifPositions: [],     // Custom positions or auto-generated, e.g. [3,6,9,12]
-    distribusiPertemuan: [],  // Array of { pertemuan, type:'cp'|'sumatif', cpIndex, cpTitle, details }
+    // Distribusi Pertemuan (always active — dihitung dari alokasiWaktu)
+    jumlahSumatif: 2,         // jumlah pertemuan asesmen sumatif
+    distribusiPertemuan: [],  // Auto-generated: Array of { pertemuan, type:'reguler'|'sumatif', tpList[] }
 
     // Alokasi Waktu
     alokasiWaktu: {
@@ -82,7 +79,7 @@ const initialState = {
     autoFallback: false,     // jangan auto-fallback, user pilih sendiri
     geminiKey: '',  // Isi di ⚙️ Settings — jangan hardcode di sini!
     qwenKey: '',    // Isi di ⚙️ Settings
-    geminiModel: 'gemini-2.5-flash-lite',
+    geminiModel: 'gemini-3.1-flash-lite-preview',
     qwenModel: 'qvq-max-2025-03-25',
   },
 
@@ -122,6 +119,18 @@ const initialState = {
     currentChapter: -1,
     progress: 0,
     logs: [],
+  },
+
+  // ATP state (Alur Tujuan Pembelajaran)
+  atp: {
+    tujuanPembelajaran: [],  // Array of { id, tp, kompetensi, levelBloom, lingkupMateri, cpCode, cpIndex, semester, order }
+    ordered: false,
+  },
+
+  // KKTP state (Kriteria Ketercapaian TP)
+  kktp: {
+    items: [],   // Array of { tpId, tpText, criteria: [{ id, text }], rubrikLevel: 'default' }
+    reviewed: false,
   },
 
   // Crossword state

@@ -9,8 +9,10 @@ import { showToast, showModal, hideModal, uid, formatDate } from './utils/helper
 import { saveProject, getProjects, loadProject, deleteProject, autoSave, loadAutoSave, saveProfile, loadProfile } from './services/storage.js';
 import { testConnection } from './services/gemini.js';
 
-// Import step modules (3-step wizard)
+// Import step modules (5-step pedagogical wizard)
 import setupModule from './modules/setup.js';
+import analisisAtpModule from './modules/analisis-atp.js';
+import kktpAsesmenModule from './modules/kktp-asesmen.js';
 import generatePreviewModule from './modules/generate-preview.js';
 import exportModule from './modules/export.js';
 
@@ -63,7 +65,7 @@ function renderView() {
     wizardProgress.style.display = 'block';
     wizardNav.style.display = 'flex';
     projectName.textContent = 'Dokumen Admin';
-    registerSteps([setupModule, generatePreviewModule, exportModule]);
+    registerSteps([setupModule, analisisAtpModule, kktpAsesmenModule, generatePreviewModule, exportModule]);
     initWizard();
   } else if (view === 'crossword') {
     wizardProgress.style.display = 'none';
@@ -180,11 +182,11 @@ function showSettingsModal() {
   const profile = state.get('profile') || {};
 
   const geminiModels = [
-    { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (Default, Cepat)', stable: true },
+    { value: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash Lite (Default, Cepat)', stable: true },
+    { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro (Premium)', stable: true },
+    { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (Stabil)', stable: true },
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Kualitas Tinggi)', stable: true },
-    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Premium)', stable: true },
-    { value: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash Lite ⚠️ (Preview)', stable: false },
-    { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro ⚠️ (Preview)', stable: false },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Premium, Stabil)', stable: true },
   ];
 
   const bodyHtml = `
@@ -316,7 +318,7 @@ function showSettingsModal() {
         state.set('settings.autoFallback', document.getElementById('modal-auto-fallback')?.checked ?? false);
         state.set('settings.geminiKey', document.getElementById('modal-gemini-key')?.value || '');
         state.set('settings.qwenKey', document.getElementById('modal-qwen-key')?.value || '');
-        state.set('settings.geminiModel', document.getElementById('modal-gemini-model')?.value || 'gemini-2.5-flash-lite');
+        state.set('settings.geminiModel', document.getElementById('modal-gemini-model')?.value || 'gemini-3.1-flash-lite-preview');
         state.set('settings.qwenModel', document.getElementById('modal-qwen-model')?.value || 'qvq-max-2025-03-25');
 
         // Save profile
@@ -393,7 +395,7 @@ function showSettingsModal() {
     document.getElementById('modal-test-gemini')?.addEventListener('click', async () => {
       const btn = document.getElementById('modal-test-gemini');
       state.set('settings.geminiKey', document.getElementById('modal-gemini-key')?.value || '');
-      state.set('settings.geminiModel', document.getElementById('modal-gemini-model')?.value || 'gemini-2.5-flash-lite');
+      state.set('settings.geminiModel', document.getElementById('modal-gemini-model')?.value || 'gemini-3.1-flash-lite-preview');
       btn.disabled = true; btn.textContent = '⏳ Testing...';
       try { await testConnection('gemini'); showToast('Gemini API berhasil terhubung!', 'success'); }
       catch (e) { showToast(e.message, 'error'); }

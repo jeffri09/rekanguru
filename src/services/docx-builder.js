@@ -107,19 +107,19 @@ function parseContentToParagraphs(text, settings) {
       continue;
     }
 
-    // H2: ## Sub-heading
-    if (line.startsWith('## ')) {
+    // H4: #### Sub-sub-sub-heading (check FIRST — most specific)
+    if (line.startsWith('#### ')) {
+      const headingText = line.replace(/^####\s*/, '').replace(/\*\*/g, '');
       elements.push(
         new Paragraph({
-          heading: HeadingLevel.HEADING_2,
-          spacing: { before: 360, after: 160 },
+          spacing: { before: 200, after: 100 },
           children: [
             new TextRun({
-              text: line.replace(/^##\s*/, ''),
+              text: headingText,
               font: settings.headingFont || 'Arial',
-              size: 26, // 13pt
+              size: 22, // 11pt
               bold: true,
-              color: '000000',
+              color: '333333',
             }),
           ],
         })
@@ -128,15 +128,16 @@ function parseContentToParagraphs(text, settings) {
       continue;
     }
 
-    // H3: ### Sub-sub-heading
+    // H3: ### Sub-sub-heading (check before ##)
     if (line.startsWith('### ')) {
+      const headingText = line.replace(/^###\s*/, '').replace(/\*\*/g, '');
       elements.push(
         new Paragraph({
           heading: HeadingLevel.HEADING_3,
           spacing: { before: 280, after: 120 },
           children: [
             new TextRun({
-              text: line.replace(/^###\s*/, ''),
+              text: headingText,
               font: settings.headingFont || 'Arial',
               size: 24, // 12pt
               bold: true,
@@ -149,17 +150,20 @@ function parseContentToParagraphs(text, settings) {
       continue;
     }
 
-    // Bullet points: - item
-    if (line.match(/^[-*]\s/)) {
+    // H2: ## Sub-heading
+    if (line.startsWith('## ')) {
+      const headingText = line.replace(/^##\s*/, '').replace(/\*\*/g, '');
       elements.push(
         new Paragraph({
-          spacing: { before: 60, after: 60 },
-          indent: { left: convertInchesToTwip(0.5) },
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 360, after: 160 },
           children: [
             new TextRun({
-              text: '• ' + line.replace(/^[-*]\s*/, ''),
-              font: settings.bodyFont || 'Times New Roman',
-              size: settings.bodySize ? settings.bodySize * 2 : 24,
+              text: headingText,
+              font: settings.headingFont || 'Arial',
+              size: 26, // 13pt
+              bold: true,
+              color: '000000',
             }),
           ],
         })
@@ -168,19 +172,69 @@ function parseContentToParagraphs(text, settings) {
       continue;
     }
 
-    // Numbered list: 1. item
-    if (line.match(/^\d+\.\s/)) {
+    // Bullet points: - item or * item
+    if (line.match(/^[-*]\s/)) {
+      const bulletText = line.replace(/^[-*]\s*/, '');
+      const bulletRuns = [
+        new TextRun({
+          text: '• ',
+          font: settings.bodyFont || 'Times New Roman',
+          size: settings.bodySize ? settings.bodySize * 2 : 24,
+        }),
+        ...parseInlineFormatting(bulletText, settings),
+      ];
       elements.push(
         new Paragraph({
           spacing: { before: 60, after: 60 },
           indent: { left: convertInchesToTwip(0.5) },
-          children: [
-            new TextRun({
-              text: line,
-              font: settings.bodyFont || 'Times New Roman',
-              size: settings.bodySize ? settings.bodySize * 2 : 24,
-            }),
-          ],
+          children: bulletRuns,
+        })
+      );
+      i++;
+      continue;
+    }
+
+    // Sub-bullet points: indented - item or * item (2+ spaces)
+    if (line.match(/^\s{2,}[-*]\s/)) {
+      const subBulletText = line.replace(/^\s*[-*]\s*/, '');
+      const subBulletRuns = [
+        new TextRun({
+          text: '  ◦ ',
+          font: settings.bodyFont || 'Times New Roman',
+          size: settings.bodySize ? settings.bodySize * 2 : 24,
+        }),
+        ...parseInlineFormatting(subBulletText, settings),
+      ];
+      elements.push(
+        new Paragraph({
+          spacing: { before: 40, after: 40 },
+          indent: { left: convertInchesToTwip(0.8) },
+          children: subBulletRuns,
+        })
+      );
+      i++;
+      continue;
+    }
+
+    // Numbered list: 1. item
+    if (line.match(/^\d+\.\s/)) {
+      const numMatch = line.match(/^(\d+\.)\s(.*)/);
+      const numPrefix = numMatch ? numMatch[1] + ' ' : '';
+      const numText = numMatch ? numMatch[2] : line;
+      const numRuns = [
+        new TextRun({
+          text: numPrefix,
+          font: settings.bodyFont || 'Times New Roman',
+          size: settings.bodySize ? settings.bodySize * 2 : 24,
+          bold: true,
+        }),
+        ...parseInlineFormatting(numText, settings),
+      ];
+      elements.push(
+        new Paragraph({
+          spacing: { before: 60, after: 60 },
+          indent: { left: convertInchesToTwip(0.5) },
+          children: numRuns,
         })
       );
       i++;
@@ -613,9 +667,8 @@ export async function buildAndDownload(book, outline, content, exportSettings, p
   if (subjectPart) filenameParts.push(subjectPart);
   if (phasePart) filenameParts.push(phasePart);
   filenameParts.push(docTypePart);
-  if (book.modulAjarMode) {
-    filenameParts.push(book.modulAjarMode === 'tahunan' ? '1Tahun' : '1Semester');
-    filenameParts.push(`${book.totalPertemuan || 0}Pertemuan`);
+  if ((book.distribusiPertemuan || []).length > 0) {
+    filenameParts.push(`${book.distribusiPertemuan.length}Pertemuan`);
   }
   filenameParts.push(year.toString());
   

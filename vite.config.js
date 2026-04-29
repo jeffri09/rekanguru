@@ -9,6 +9,16 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // CP database — large static data (165KB), cached separately
+          'cp-database': ['./src/utils/cp-data.js'],
+          // Export libraries — only needed at final step
+          'vendor-export': ['docx', 'exceljs'],
+        },
+      },
+    },
   },
 });
 
