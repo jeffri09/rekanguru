@@ -1422,78 +1422,7 @@ input, select, textarea {
 }
 
 /* ============ RESPONSIVE ============ */
-@media (max-width: 768px) {
-  #app-header {
-    padding: var(--space-sm) var(--space-md);
-  }
-
-  .header-center { display: none; }
-
-  #wizard-progress {
-    padding: var(--space-md);
-  }
-
-  .step-label { display: none; }
-
-  .steps {
-    gap: var(--space-sm);
-    max-width: 100%;
-  }
-
-  .step-circle {
-    width: 32px;
-    height: 32px;
-    font-size: 11px;
-  }
-
-  #wizard-content {
-    padding: var(--space-md);
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .editor-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .editor-sidebar {
-    max-height: 200px;
-  }
-
-  .export-grid {
-    grid-template-columns: 1fr;
-  }
-
-  #wizard-nav {
-    padding: var(--space-sm) var(--space-md);
-  }
-
-  .nav-info { display: none; }
-
-  .modal {
-    min-width: auto;
-    width: 90vw;
-    margin: var(--space-md);
-  }
-
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .school-level-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .cw-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .difficulty-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
+/* NOTE: Main responsive rules are consolidated at the bottom of this file */
 
 /* ============ DASHBOARD ============ */
 .dashboard-hero {
@@ -1982,11 +1911,6 @@ input, select, textarea {
   align-items: start;
 }
 
-@media (max-width: 900px) {
-  .sm-layout {
-    grid-template-columns: 1fr;
-  }
-}
 
 .sm-form-panel { min-width: 0; }
 .sm-preview-panel { min-width: 0; }
@@ -3329,18 +3253,462 @@ input, select, textarea {
 }
 
 /* ============================================================
-   RESPONSIVE — ATP & KKTP
+   RESPONSIVE LAYOUT & MOBILE OPTIMIZATION
+   Consolidated responsive rules for all components
    ============================================================ */
 
+/* ---- Safe Area for Modern Phones (notch, dynamic island) ---- */
+@supports (padding: env(safe-area-inset-top)) {
+  #app-header {
+    padding-top: max(var(--space-md), env(safe-area-inset-top));
+  }
+  #wizard-nav {
+    padding-bottom: max(var(--space-md), env(safe-area-inset-bottom));
+  }
+}
+
+/* ---- Tablet Breakpoint (≤ 1024px) ---- */
+@media (max-width: 1024px) {
+  .cw-layout {
+    grid-template-columns: 320px 1fr;
+  }
+
+  .dashboard-grid {
+    gap: var(--space-md);
+  }
+}
+
+/* ---- Tablet / Small Laptop (≤ 900px) ---- */
+@media (max-width: 900px) {
+  .sm-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cw-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cw-form-panel {
+    position: static;
+  }
+
+  .export-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modul-ajar-mode-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ---- Mobile Breakpoint (≤ 768px) ---- */
 @media (max-width: 768px) {
+  /* === Global === */
+  body {
+    font-size: var(--fs-sm);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* === Header === */
+  #app-header {
+    padding: var(--space-sm) var(--space-md);
+    gap: var(--space-sm);
+  }
+
+  .header-left {
+    gap: var(--space-xs);
+  }
+
+  .header-center {
+    display: none;
+  }
+
+  .header-right {
+    gap: var(--space-xs);
+  }
+
+  .logo-text {
+    font-size: var(--fs-md);
+  }
+
+  .logo-icon {
+    font-size: 1.2rem;
+  }
+
+  .project-name {
+    display: none;
+  }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  /* === Wizard Progress Stepper === */
+  #wizard-progress {
+    padding: var(--space-sm) var(--space-md);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .progress-track {
+    left: 5%;
+    right: 5%;
+  }
+
+  .steps {
+    min-width: max-content;
+    gap: var(--space-lg);
+    padding: var(--space-xs) var(--space-sm);
+    max-width: 100%;
+  }
+
+  .step-circle {
+    width: 34px;
+    height: 34px;
+    font-size: var(--fs-xs);
+  }
+
+  .step-label {
+    font-size: 0.6rem;
+    max-width: 60px;
+    text-align: center;
+    word-break: break-word;
+    hyphens: auto;
+  }
+
+  /* === Main Content === */
+  #wizard-content {
+    padding: var(--space-md);
+  }
+
+  .step-title {
+    font-size: var(--fs-xl);
+  }
+
+  .step-subtitle {
+    font-size: var(--fs-sm);
+  }
+
+  /* === Wizard Navigation === */
+  #wizard-nav {
+    padding: var(--space-sm) var(--space-md);
+    gap: var(--space-sm);
+  }
+
+  .nav-info {
+    display: none;
+  }
+
+  #wizard-nav .btn {
+    padding: 10px 18px;
+    font-size: var(--fs-sm);
+  }
+
+  /* === Forms === */
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: 12px 14px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* === Buttons (touch-friendly sizing) === */
+  .btn {
+    padding: 12px 20px;
+    min-height: 44px;
+    font-size: var(--fs-sm);
+  }
+
+  .btn-sm {
+    padding: 8px 14px;
+    min-height: 36px;
+  }
+
+  .btn-lg {
+    padding: 14px 28px;
+    font-size: var(--fs-base);
+  }
+
+  /* === Cards === */
+  .card {
+    padding: var(--space-md);
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  /* === Dashboard === */
+  .dashboard-hero {
+    padding: var(--space-lg) 0 var(--space-md);
+  }
+
+  .dashboard-title {
+    font-size: var(--fs-2xl);
+  }
+
+  .dashboard-subtitle {
+    font-size: var(--fs-sm);
+    padding: 0 var(--space-sm);
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-md);
+  }
+
+  .dashboard-card {
+    padding: var(--space-lg);
+  }
+
+  .dashboard-card-icon {
+    font-size: 2rem;
+  }
+
+  .dashboard-card-arrow {
+    transform: rotate(90deg);
+  }
+
+  /* === School Level Grid === */
+  .school-level-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+
+  .school-level-card {
+    flex-direction: row;
+    text-align: left;
+    padding: var(--space-md);
+    gap: var(--space-md);
+  }
+
+  .school-level-icon {
+    font-size: 1.6rem;
+  }
+
+  /* === Doctype Chips === */
+  .doctype-grid {
+    gap: 6px;
+  }
+
+  .doctype-chip {
+    padding: 8px 12px;
+    font-size: var(--fs-xs);
+  }
+
+  /* === Difficulty Grid === */
+  .difficulty-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .difficulty-chip {
+    padding: var(--space-sm) var(--space-xs);
+  }
+
+  .difficulty-emoji {
+    font-size: 1rem;
+  }
+
+  /* === Editor Layout === */
+  .editor-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .editor-sidebar {
+    max-height: none;
+    width: 100%;
+    border-radius: var(--radius-md);
+  }
+
+  .sidebar-chapter {
+    padding: 12px var(--space-md);
+  }
+
+  .editor-toolbar {
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+
+  .editor-toolbar-left,
+  .editor-toolbar-right {
+    flex-wrap: wrap;
+  }
+
+  .editor-textarea {
+    min-height: 300px;
+    padding: var(--space-md);
+    font-size: var(--fs-base);
+  }
+
+  /* === Chapter Items (touch-friendly) === */
+  .chapter-item {
+    padding: var(--space-md);
+    gap: var(--space-sm);
+  }
+
+  .chapter-actions {
+    opacity: 1; /* Always visible on mobile */
+  }
+
+  .chapter-drag-handle {
+    padding: var(--space-xs);
+  }
+
+  .chapter-action-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* === Export Grid === */
+  .export-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .export-preview {
+    padding: var(--space-lg);
+    min-height: 300px;
+  }
+
+  /* === Stats Bar === */
+  .stats-bar {
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    padding: var(--space-md);
+  }
+
+  .stat-item {
+    min-width: calc(50% - var(--space-md));
+  }
+
+  /* === Crossword Layout === */
+  .cw-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .cw-form-panel {
+    position: static;
+  }
+
+  .cw-cell {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .cw-cell-num {
+    font-size: 7px;
+  }
+
+  .cw-clues {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .cw-grid-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--space-sm);
+  }
+
+  /* === Soal Sumatif Layout === */
+  .sm-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .sm-preview-area {
+    max-height: 500px;
+  }
+
+  .sm-preview-matching {
+    grid-template-columns: 1fr;
+  }
+
+  .pg-option-chips {
+    flex-wrap: wrap;
+  }
+
+  .pg-option-chip {
+    flex: 0 0 calc(50% - var(--space-xs));
+    padding: 10px var(--space-sm);
+  }
+
+  .soal-type-header {
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+
+  /* === Toast Notifications === */
+  #toast-container {
+    left: var(--space-md);
+    right: var(--space-md);
+    top: auto;
+    bottom: calc(60px + var(--space-md));
+  }
+
+  .toast {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* === Modal === */
+  .modal {
+    min-width: auto;
+    width: 95vw;
+    max-width: 95vw;
+    margin: var(--space-sm);
+    padding: var(--space-md);
+    max-height: 90vh;
+  }
+
+  .modal-footer {
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+
+  .modal-footer .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* === Upload Area === */
+  .upload-area {
+    padding: var(--space-lg);
+  }
+
+  .upload-area-icon {
+    font-size: 1.5rem;
+  }
+
+  /* === ATP Components === */
   .atp-tp-item {
     flex-wrap: wrap;
     gap: var(--space-sm);
+    padding: 10px 12px;
   }
 
   .atp-tp-actions {
     width: 100%;
     justify-content: flex-end;
+    gap: var(--space-xs);
   }
 
   .atp-tp-drag-handle {
@@ -3351,8 +3719,22 @@ input, select, textarea {
     grid-template-columns: 1fr;
   }
 
+  .atp-tp-meta {
+    flex-wrap: wrap;
+  }
+
+  .atp-materi-badge {
+    max-width: 140px;
+  }
+
+  /* === KKTP Components === */
   .kktp-tp-header {
     flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .kktp-tp-actions {
+    align-self: flex-end;
   }
 
   .kktp-rubrik-grid {
@@ -3362,5 +3744,254 @@ input, select, textarea {
   .kktp-alignment-table {
     font-size: 0.7rem;
   }
+
+  .kktp-alignment-table th,
+  .kktp-alignment-table td {
+    padding: 6px 8px;
+  }
+
+  .kktp-criteria-item {
+    padding: 8px 10px;
+  }
+
+  /* === Modul Ajar === */
+  .modul-ajar-mode-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* === Generation Progress === */
+  .progress-ring {
+    width: 130px;
+    height: 130px;
+  }
+
+  .generation-log {
+    max-height: 220px;
+    padding: var(--space-md);
+  }
+
+  /* === Project List (Modal) === */
+  .project-item {
+    padding: var(--space-md);
+    gap: var(--space-sm);
+  }
+
+  /* === Distribusi Preview === */
+  .distribusi-item {
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    padding: 6px var(--space-sm);
+  }
+
+  .distribusi-info {
+    flex-wrap: wrap;
+  }
+
+  /* === CP Scanning === */
+  .cp-item {
+    padding: var(--space-sm);
+  }
+
+  .cp-item-header {
+    flex-wrap: wrap;
+  }
+
+  .cp-item-delete {
+    opacity: 1; /* Always visible on mobile */
+  }
+
+  /* === Toggle Chips === */
+  .toggle-chip {
+    padding: 8px 14px;
+    font-size: var(--fs-xs);
+  }
 }
 
+/* ---- Very Small Screens (≤ 480px) ---- */
+@media (max-width: 480px) {
+  /* Logo & Header */
+  .logo-text {
+    font-size: var(--fs-sm);
+  }
+
+  .logo-icon {
+    font-size: 1rem;
+  }
+
+  #app-header {
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  /* Wizard Stepper */
+  .step-label {
+    display: none;
+  }
+
+  .step-circle {
+    width: 30px;
+    height: 30px;
+    font-size: 11px;
+  }
+
+  /* Content */
+  #wizard-content {
+    padding: var(--space-sm);
+  }
+
+  .step-title {
+    font-size: var(--fs-lg);
+  }
+
+  /* Cards */
+  .card {
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 10px 16px;
+    font-size: var(--fs-xs);
+    min-height: 40px;
+  }
+
+  /* Dashboard */
+  .dashboard-title {
+    font-size: var(--fs-xl);
+  }
+
+  .dashboard-card {
+    padding: var(--space-md);
+    gap: var(--space-md);
+  }
+
+  .dashboard-card-icon {
+    font-size: 1.6rem;
+  }
+
+  .dashboard-card-title {
+    font-size: var(--fs-base);
+  }
+
+  /* Difficulty Grid */
+  .difficulty-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Crossword */
+  .cw-cell {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+
+  .cw-cell-num {
+    font-size: 6px;
+  }
+
+  /* Editor */
+  .editor-textarea {
+    min-height: 250px;
+    padding: var(--space-sm);
+  }
+
+  /* Stats */
+  .stats-bar {
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+  }
+
+  .stat-value {
+    font-size: var(--fs-base);
+  }
+
+  .stat-label {
+    font-size: 9px;
+  }
+
+  /* KKTP Rubrik */
+  .kktp-rubrik-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+
+  .kktp-rubrik-level {
+    padding: 6px 8px;
+  }
+
+  .kktp-rubrik-label {
+    font-size: 0.6rem;
+  }
+
+  .kktp-rubrik-desc {
+    font-size: 0.55rem;
+  }
+
+  /* Modal */
+  .modal {
+    width: 100vw;
+    max-width: 100vw;
+    margin: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 95vh;
+    position: fixed;
+    bottom: 0;
+  }
+
+  .modal-overlay {
+    align-items: flex-end;
+  }
+
+  /* Navigation */
+  #wizard-nav {
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  #wizard-nav .btn {
+    padding: 8px 14px;
+    font-size: var(--fs-xs);
+    min-height: 38px;
+  }
+
+  /* Toast */
+  #toast-container {
+    left: var(--space-sm);
+    right: var(--space-sm);
+  }
+
+  /* Soal Type Cards */
+  .soal-type-card {
+    padding: var(--space-md);
+  }
+
+  .soal-type-icon {
+    font-size: 1.2rem;
+  }
+
+  .pg-option-chip {
+    flex: 0 0 100%;
+    padding: 10px var(--space-md);
+  }
+
+  /* Upload */
+  .upload-area {
+    padding: var(--space-md);
+  }
+
+  /* Progress */
+  .progress-ring {
+    width: 110px;
+    height: 110px;
+  }
+
+  .progress-ring-text {
+    font-size: var(--fs-xl);
+  }
+}
