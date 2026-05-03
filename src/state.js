@@ -171,6 +171,33 @@ const initialState = {
     },
     isGenerating: false,
   },
+
+  // Lomba Cerdas Cermat state
+  lcc: {
+    activeTab: 'soal', // 'soal' | 'poster'
+    // Soal state
+    phase: 'playoff', // 'playoff' | '8besar' | '4besar' | 'final'
+    participants: 10,
+    questionCount: 5,
+    difficulty: 'sedang',
+    subjects: {
+      matematika: true,
+      bahasa_inggris: true,
+      bahasa_indonesia: true,
+      pkn: true,
+      ipa: true,
+      ips: true,
+    },
+    // Poster state
+    poster: {
+      sponsor: false,
+      organizerName: '',
+      date: '',
+      venue: '',
+      prizes: 'uang tunai dan sertifikat',
+      terms: '1. setiap kelas wajib mengirim 3 orang peserta perwakilan\\n2. peserta lomba wajib membawa alat tulis pena/pensil sendiri\\n3. rangkaian lomba playoff, 8 besar, 4 besar, final',
+    }
+  },
 };
 
 class AppState {

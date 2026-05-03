@@ -22,6 +22,9 @@ import { renderCrosswordPage, initCrosswordPage } from './modules/crossword.js';
 // Import sumatif module
 import { renderSumatifPage, initSumatifPage } from './modules/sumatif.js';
 
+// Import LCC module
+import { renderLccPage, initLccPage } from './modules/lcc.js';
+
 // ====== INITIALIZATION ======
 function init() {
   setupHeaderButtons();
@@ -79,6 +82,12 @@ function renderView() {
     projectName.textContent = 'Soal Sumatif';
     mainContent.innerHTML = renderSumatifPage();
     initSumatifPage();
+  } else if (view === 'lcc') {
+    wizardProgress.style.display = 'none';
+    wizardNav.style.display = 'none';
+    projectName.textContent = 'Lomba Cerdas Cermat';
+    mainContent.innerHTML = renderLccPage();
+    initLccPage();
   }
 }
 
@@ -137,6 +146,20 @@ function renderDashboard() {
           </div>
           <div class="dashboard-card-arrow">→</div>
         </button>
+
+        <button class="dashboard-card" id="btn-go-lcc">
+          <div class="dashboard-card-icon">🏆</div>
+          <div class="dashboard-card-content">
+            <h3 class="dashboard-card-title">Lomba Cerdas Cermat</h3>
+            <p class="dashboard-card-desc">Buat soal kompetisi cerdas cermat dari fase Playoff hingga Final, dan hasilkan prompt poster AI untuk publikasi lomba.</p>
+            <div class="dashboard-card-tags">
+              <span class="tag">Paket Soal</span>
+              <span class="tag">Prompt Poster</span>
+              <span class="tag">Output .docx</span>
+            </div>
+          </div>
+          <div class="dashboard-card-arrow">→</div>
+        </button>
       </div>
     </div>
   `;
@@ -157,6 +180,11 @@ function initDashboard() {
 
   document.getElementById('btn-go-sumatif')?.addEventListener('click', () => {
     state.set('currentView', 'sumatif');
+    window.dispatchEvent(new Event('viewchange'));
+  });
+
+  document.getElementById('btn-go-lcc')?.addEventListener('click', () => {
+    state.set('currentView', 'lcc');
     window.dispatchEvent(new Event('viewchange'));
   });
 }
