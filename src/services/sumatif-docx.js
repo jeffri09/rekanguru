@@ -21,8 +21,17 @@ import {
   WidthType,
   BorderStyle,
   VerticalAlign,
+  ImageRun,
 } from 'docx';
 import { saveAs } from 'file-saver';
+import logo1Url from '../assets/logo1.jpeg';
+import logo2Url from '../assets/logo2.jpeg';
+
+async function fetchImageBuffer(url) {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  return arrayBuffer;
+}
 
 const optionLetters = ['A', 'B', 'C', 'D', 'E'];
 
@@ -412,12 +421,129 @@ export async function buildSumatifDocx(generatedData, config) {
 
   const children = [];
 
-  // ====== DOCUMENT HEADER ======
+  // ====== FETCH LOGOS ======
+  const logo1Buffer = await fetchImageBuffer(logo1Url);
+  const logo2Buffer = await fetchImageBuffer(logo2Url);
+
+  // ====== KOP SURAT (HEADER) ======
+  const kopTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+      bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+      left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+      right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+      insideHorizontal: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+      insideVertical: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+    },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 15, type: WidthType.PERCENTAGE },
+            verticalAlign: VerticalAlign.CENTER,
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new ImageRun({
+                    data: logo1Buffer,
+                    transformation: { width: 75, height: 75 },
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new TableCell({
+            width: { size: 70, type: WidthType.PERCENTAGE },
+            verticalAlign: VerticalAlign.CENTER,
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 40 },
+                children: [
+                  new TextRun({
+                    text: 'Akta Pendiri No. 08 Tanggal 24 April 2015 KeMenKumHam: AHU-00571.AH.02.01 Tahun 2014',
+                    font: 'Calibri',
+                    size: 17,
+                  }),
+                ],
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 40 },
+                children: [
+                  new TextRun({
+                    text: 'PUSAT KEGIATAN BELAJAR MASYARAKAT (PKBM) MIFTAHUL-KHOIR',
+                    font: 'Adobe Garamond Pro',
+                    size: 24,
+                    bold: true,
+                  }),
+                ],
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 40 },
+                children: [
+                  new TextRun({
+                    text: "Darul-Qur'an Wal-Hadits OKU Timur",
+                    font: 'Adobe Garamond Pro',
+                    size: 22,
+                    bold: true,
+                  }),
+                ],
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 40 },
+                children: [
+                  new TextRun({
+                    text: 'Jl. Tuanku Imam Bonjol, Peracak/Kotabaru Selatan, Bunga Mayang/Martapura, Ogan Komering Ulu Timur, Sumatera Selatan',
+                    font: 'Adobe Garamond Pro',
+                    size: 20,
+                  }),
+                ],
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({
+                    text: 'Website: kuncikebaikan.com   Contact Person: 0822-6666-0856',
+                    font: 'Calibri',
+                    size: 22,
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new TableCell({
+            width: { size: 15, type: WidthType.PERCENTAGE },
+            verticalAlign: VerticalAlign.CENTER,
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new ImageRun({
+                    data: logo2Buffer,
+                    transformation: { width: 75, height: 64 }, // adjusted based on original aspect ratio (172x147)
+                  }),
+                ],
+              }),
+            ],
+          }),
+        ],
+      }),
+    ],
+  });
+
+  // Header created, but attached to document properties below.
+  
+  // ====== IDENTITAS SOAL (BODY) ======
   children.push(new Paragraph({
     alignment: AlignmentType.CENTER,
-    spacing: { after: 100 },
+    spacing: { after: 60 },
     children: [
-      new TextRun({ text: 'SOAL UJIAN SUMATIF', font: 'Arial', size: 32, bold: true }),
+      new TextRun({ text: 'SOAL SUMATIF AKHIR SEMESTER 2', font: 'Calibri', size: 22, bold: true }),
     ],
   }));
 
@@ -425,25 +551,15 @@ export async function buildSumatifDocx(generatedData, config) {
     alignment: AlignmentType.CENTER,
     spacing: { after: 60 },
     children: [
-      new TextRun({ text: subject || 'Mata Pelajaran', font: 'Arial', size: 26, bold: true }),
+      new TextRun({ text: `MATA PELAJARAN ${subject ? subject.toUpperCase() : '...............'} KELAS ${classPhase ? classPhase.toUpperCase() : '...............'}`, font: 'Calibri', size: 22, bold: true }),
     ],
   }));
 
-  if (classPhase) {
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 60 },
-      children: [
-        new TextRun({ text: classPhase, font: 'Arial', size: 24 }),
-      ],
-    }));
-  }
-
   children.push(new Paragraph({
     alignment: AlignmentType.CENTER,
-    spacing: { after: 40 },
+    spacing: { after: 200 },
     children: [
-      new TextRun({ text: `Topik: ${topic}`, font: 'Times New Roman', size: 24, italics: true }),
+      new TextRun({ text: 'TAHUN PELAJARAN 2025/2026', font: 'Calibri', size: 22, bold: true }),
     ],
   }));
 
@@ -516,7 +632,21 @@ export async function buildSumatifDocx(generatedData, config) {
       {
         properties: {
           page: pageProps,
+          // Mengatur header berbeda untuk halaman pertama
+          titlePage: true,
           headers: {
+            first: new Header({
+              children: [
+                kopTable,
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  spacing: { before: 80, after: 200 },
+                  children: [
+                    new TextRun({ text: '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', size: 24 }),
+                  ],
+                }),
+              ],
+            }),
             default: new Header({
               children: [
                 new Paragraph({
