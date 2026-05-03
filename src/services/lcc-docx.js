@@ -26,7 +26,7 @@ const pageProps = {
   },
 };
 
-export async function buildLccDocx(resultsArray, config) {
+export async function buildLccDocx(groupedResults, config) {
   const children = [];
 
   // Title
@@ -46,52 +46,108 @@ export async function buildLccDocx(resultsArray, config) {
     ],
   }));
 
-  // Render each subject's result
-  resultsArray.forEach((result, index) => {
+  // ============================================
+  // BAGIAN 1: SOAL
+  // ============================================
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_1,
+    spacing: { before: 200, after: 200 },
+    children: [
+      new TextRun({ text: 'BAGIAN 1: SOAL PER PESERTA', font: 'Arial', size: 28, bold: true }),
+    ],
+  }));
+
+  groupedResults.forEach((peserta, index) => {
     if (index > 0) {
       children.push(new Paragraph({ children: [new PageBreak()] }));
     }
 
     children.push(new Paragraph({
-      heading: HeadingLevel.HEADING_1,
-      spacing: { before: 200, after: 200 },
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 200, after: 100 },
       children: [
         new TextRun({
-          text: `MATA PELAJARAN: ${result.subject.toUpperCase()}`,
+          text: peserta.participant_name.toUpperCase(),
           font: 'Arial',
-          size: 28,
+          size: 26,
           bold: true,
         }),
       ],
     }));
 
-    (result.teams || []).forEach(team => {
+    (peserta.subjects || []).forEach(sub => {
       children.push(new Paragraph({
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 200, after: 100 },
+        spacing: { before: 120, after: 40 },
         children: [
           new TextRun({
-            text: team.team_name,
+            text: `Mapel: ${sub.subject.toUpperCase()}`,
             font: 'Arial',
             size: 24,
             bold: true,
+            underline: {},
           }),
         ],
       }));
 
-      (team.questions || []).forEach(q => {
+      (sub.questions || []).forEach(q => {
         children.push(new Paragraph({
-          spacing: { before: 120, after: 40 },
+          spacing: { before: 40, after: 40 },
           children: [
             new TextRun({ text: `${q.number}. `, font: 'Times New Roman', size: 24, bold: true }),
             new TextRun({ text: q.question, font: 'Times New Roman', size: 24 }),
           ],
         }));
+      });
+    });
+  });
+
+  // ============================================
+  // BAGIAN 2: KUNCI JAWABAN
+  // ============================================
+  children.push(new Paragraph({ children: [new PageBreak()] }));
+
+  children.push(new Paragraph({
+    heading: HeadingLevel.HEADING_1,
+    spacing: { before: 200, after: 200 },
+    children: [
+      new TextRun({ text: 'BAGIAN 2: KUNCI JAWABAN', font: 'Arial', size: 28, bold: true }),
+    ],
+  }));
+
+  groupedResults.forEach((peserta, index) => {
+    children.push(new Paragraph({
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 200, after: 100 },
+      children: [
+        new TextRun({
+          text: peserta.participant_name.toUpperCase(),
+          font: 'Arial',
+          size: 26,
+          bold: true,
+        }),
+      ],
+    }));
+
+    (peserta.subjects || []).forEach(sub => {
+      children.push(new Paragraph({
+        spacing: { before: 120, after: 40 },
+        children: [
+          new TextRun({
+            text: `Mapel: ${sub.subject.toUpperCase()}`,
+            font: 'Arial',
+            size: 24,
+            bold: true,
+            underline: {},
+          }),
+        ],
+      }));
+
+      (sub.questions || []).forEach(q => {
         children.push(new Paragraph({
-          spacing: { before: 40, after: 80 },
-          indent: { left: 400 },
+          spacing: { before: 40, after: 40 },
           children: [
-            new TextRun({ text: `Kunci Jawaban: ${q.answer}`, font: 'Times New Roman', size: 22, bold: true, italics: true }),
+            new TextRun({ text: `${q.number}. `, font: 'Times New Roman', size: 24, bold: true }),
+            new TextRun({ text: q.answer, font: 'Times New Roman', size: 24 }),
           ],
         }));
       });

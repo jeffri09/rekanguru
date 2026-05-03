@@ -59,22 +59,23 @@ function renderSoalTab(lcc) {
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="lcc-participants">Jumlah Team/Peserta ${!isPlayoff ? '(Otomatis)' : ''}</label>
+            <label class="form-label" for="lcc-participants">Jumlah Peserta ${!isPlayoff ? '(Otomatis)' : ''}</label>
             <input class="form-input" id="lcc-participants" type="number" min="2" max="50" value="${lcc.participants}" ${!isPlayoff ? 'disabled' : ''} />
             <p class="form-hint">Diinput manual hanya pada babak playoff.</p>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="lcc-question-count">Jumlah Soal per Regu (tiap mapel)</label>
+              <label class="form-label" for="lcc-question-count">Jumlah Soal per Peserta (tiap mapel)</label>
               <input class="form-input" id="lcc-question-count" type="number" min="1" max="20" value="${lcc.questionCount}" />
             </div>
             <div class="form-group">
               <label class="form-label">Tingkat Kesulitan</label>
               <select class="form-select" id="lcc-difficulty">
-                <option value="mudah" ${lcc.difficulty === 'mudah' ? 'selected' : ''}>Mudah</option>
-                <option value="sedang" ${lcc.difficulty === 'sedang' ? 'selected' : ''}>Sedang</option>
-                <option value="sulit" ${lcc.difficulty === 'sulit' ? 'selected' : ''}>Sulit</option>
+                <option value="sangat_mudah" ${lcc.difficulty === 'sangat_mudah' ? 'selected' : ''}>Sangat Mudah (Hafalan dasar)</option>
+                <option value="mudah" ${lcc.difficulty === 'mudah' ? 'selected' : ''}>Mudah (Pemahaman)</option>
+                <option value="sedang" ${lcc.difficulty === 'sedang' ? 'selected' : ''}>Sedang (Penerapan)</option>
+                <option value="sulit" ${lcc.difficulty === 'sulit' ? 'selected' : ''}>Sulit (Analisis)</option>
                 <option value="sangat_sulit" ${lcc.difficulty === 'sangat_sulit' ? 'selected' : ''}>Sangat Sulit (HOTS)</option>
               </select>
             </div>
@@ -82,12 +83,15 @@ function renderSoalTab(lcc) {
 
           <div class="form-group">
             <label class="form-label">Mata Pelajaran (Centang untuk mengaktifkan)</label>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
+            <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
               ${Object.entries(lcc.subjects).map(([k, v]) => `
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
-                  <input type="checkbox" class="lcc-subject-cb" data-key="${k}" ${v ? 'checked' : ''} />
-                  ${k === 'pkn' ? 'PKN' : k === 'ipa' ? 'IPA' : k === 'ips' ? 'IPS' : k.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </label>
+                <div style="background: var(--bg-secondary); padding: var(--space-sm); border-radius: 8px;">
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 600;">
+                    <input type="checkbox" class="lcc-subject-cb" data-key="${k}" ${v ? 'checked' : ''} />
+                    ${k === 'pkn' ? 'PKN' : k === 'ipa' ? 'IPA' : k === 'ips' ? 'IPS' : k.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </label>
+                  ${v ? `<input type="text" class="form-input lcc-topic-input" data-key="${k}" placeholder="Opsional: Ruang lingkup materi/topik..." value="${lcc.topics[k] || ''}" style="margin-top: 8px;" />` : ''}
+                </div>
               `).join('')}
             </div>
           </div>
@@ -197,19 +201,19 @@ function renderPosterTab(lcc) {
   `;
 }
 
-function renderSoalPreview(dataArray) {
-  if (!dataArray || dataArray.length === 0) return '<p>Belum ada data.</p>';
+function renderSoalPreview(groupedData) {
+  if (!groupedData || groupedData.length === 0) return '<p>Belum ada data.</p>';
   
   let html = '';
-  dataArray.forEach(res => {
+  groupedData.forEach(peserta => {
     html += `<div class="sm-preview-section">
-      <h4 class="sm-preview-section-title">Mapel: ${res.subject.toUpperCase()}</h4>`;
+      <h4 class="sm-preview-section-title" style="font-size: 1.1rem;">${escapeHtml(peserta.participant_name)}</h4>`;
     
-    (res.teams || []).forEach(team => {
+    (peserta.subjects || []).forEach(sub => {
       html += `<div style="margin-bottom: var(--space-md); padding: var(--space-sm); background: var(--bg-secondary); border-radius: 8px;">
-        <h5 style="margin-bottom: var(--space-sm); font-size: 0.95rem;">${escapeHtml(team.team_name)}</h5>`;
+        <h5 style="margin-bottom: var(--space-sm); font-size: 0.95rem;">Mapel: ${escapeHtml(sub.subject.toUpperCase())}</h5>`;
       
-      (team.questions || []).forEach(q => {
+      (sub.questions || []).forEach(q => {
         html += `<div class="sm-preview-question" style="margin-bottom: var(--space-sm);">
           <div class="sm-preview-q-num" style="font-size: 0.85rem; width: 24px; height: 24px; line-height: 24px;">${q.number}</div>
           <div class="sm-preview-q-body">
@@ -257,14 +261,15 @@ function initSoalEvents() {
       let p = state.get('lcc.participants');
       if (radio.value === '8besar') p = 8;
       else if (radio.value === '4besar') p = 4;
-      else if (radio.value === 'final') p = 3;
+      else if (radio.value === 'final') p = 2;
+      else p = 21;
       state.set('lcc.participants', p);
       window.dispatchEvent(new Event('viewchange'));
     });
   });
 
   document.getElementById('lcc-participants')?.addEventListener('change', (e) => {
-    state.set('lcc.participants', parseInt(e.target.value) || 10);
+    state.set('lcc.participants', parseInt(e.target.value) || 21);
   });
 
   document.getElementById('lcc-question-count')?.addEventListener('change', (e) => {
@@ -278,6 +283,13 @@ function initSoalEvents() {
   document.querySelectorAll('.lcc-subject-cb').forEach(cb => {
     cb.addEventListener('change', () => {
       state.set(`lcc.subjects.${cb.dataset.key}`, cb.checked);
+      window.dispatchEvent(new Event('viewchange')); // Re-render to show/hide topic input
+    });
+  });
+
+  document.querySelectorAll('.lcc-topic-input').forEach(input => {
+    input.addEventListener('change', () => {
+      state.set(`lcc.topics.${input.dataset.key}`, input.value);
     });
   });
 
@@ -322,11 +334,9 @@ function initPosterEvents() {
 
 async function handleGenerateSoal() {
   const lcc = state.get('lcc');
-  const activeSubjects = Object.entries(lcc.subjects).filter(([_, v]) => v).map(([k]) => {
-    return k === 'pkn' ? 'PKN' : k === 'ipa' ? 'IPA' : k === 'ips' ? 'IPS' : k.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-  });
+  const activeSubjectKeys = Object.entries(lcc.subjects).filter(([_, v]) => v).map(([k]) => k);
 
-  if (activeSubjects.length === 0) {
+  if (activeSubjectKeys.length === 0) {
     showToast('Pilih minimal satu mata pelajaran!', 'warning');
     return;
   }
@@ -336,27 +346,55 @@ async function handleGenerateSoal() {
   btn.disabled = true;
   btn.innerHTML = '<div class="loading-spinner" style="width:16px; height:16px; border-width:2px;"></div> <span>Generating...</span>';
 
-  const results = [];
+  const rawResults = [];
   try {
-    for (let i = 0; i < activeSubjects.length; i++) {
-      const subject = activeSubjects[i];
+    for (let i = 0; i < activeSubjectKeys.length; i++) {
+      const key = activeSubjectKeys[i];
+      const subjectName = key === 'pkn' ? 'PKN' : key === 'ipa' ? 'IPA' : key === 'ips' ? 'IPS' : key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      const topic = lcc.topics[key] || '';
+
       previewArea.innerHTML = `
         <div class="empty-state" style="padding: var(--space-2xl);">
           <div class="loading-spinner" style="margin: 0 auto var(--space-md);"></div>
-          <div class="empty-state-title">Membuat Soal ${subject}...</div>
-          <div class="empty-state-text">Proses ${i + 1} dari ${activeSubjects.length} mata pelajaran</div>
+          <div class="empty-state-title">Membuat Soal ${subjectName}...</div>
+          <div class="empty-state-text">Proses ${i + 1} dari ${activeSubjectKeys.length} mata pelajaran</div>
         </div>
       `;
 
-      const prompt = lccSoalPrompt(subject, lcc.phase, lcc.participants, lcc.questionCount, lcc.difficulty);
+      const prompt = lccSoalPrompt(subjectName, topic, lcc.phase, lcc.participants, lcc.questionCount, lcc.difficulty);
       const response = await generateText(prompt);
       const parsed = parseJsonResponse(response);
-      results.push(parsed);
-      showToast(`Soal ${subject} berhasil dibuat ✅`, 'info');
+      rawResults.push(parsed);
+      showToast(`Soal ${subjectName} berhasil dibuat ✅`, 'info');
     }
 
-    generatedSoalData = results;
-    previewArea.innerHTML = renderSoalPreview(results);
+    // Group by Peserta
+    const grouped = [];
+    // Initialize grouped with peserta from the first subject
+    if (rawResults[0] && rawResults[0].participants) {
+      rawResults[0].participants.forEach(p => {
+        grouped.push({
+          participant_name: p.participant_name,
+          subjects: []
+        });
+      });
+    }
+
+    // Populate subjects for each peserta
+    rawResults.forEach(res => {
+      (res.participants || []).forEach(p => {
+        const target = grouped.find(g => g.participant_name === p.participant_name);
+        if (target) {
+          target.subjects.push({
+            subject: res.subject,
+            questions: p.questions || []
+          });
+        }
+      });
+    });
+
+    generatedSoalData = grouped;
+    previewArea.innerHTML = renderSoalPreview(grouped);
     document.getElementById('lcc-download-area').style.display = 'block';
     showToast('Semua soal LCC berhasil dibuat! 🎉', 'success');
 

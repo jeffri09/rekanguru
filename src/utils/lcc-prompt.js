@@ -1,22 +1,24 @@
-export function lccSoalPrompt(subject, phase, participants, questionCount, difficulty) {
+export function lccSoalPrompt(subject, topic, phase, participants, questionCount, difficulty) {
+  const topicText = topic ? `\nRuang Lingkup Materi/Topik: ${topic}` : '';
+
   return `Buatkan paket soal untuk Lomba Cerdas Cermat (LCC) tingkat sekolah.
-Mata Pelajaran: ${subject}
+Mata Pelajaran: ${subject}${topicText}
 Babak: ${phase}
 Tingkat Kesulitan: ${difficulty}
-Jumlah Regu/Peserta: ${participants} regu
-Jumlah Soal per Regu: ${questionCount} soal
+Jumlah Peserta: ${participants} peserta
+Jumlah Soal per Peserta: ${questionCount} soal
 
 Tugas Anda:
-Buatkan soal untuk masing-masing regu secara spesifik. Setiap regu harus mendapatkan ${questionCount} soal yang berbeda dari regu lainnya.
+Buatkan soal untuk masing-masing peserta secara spesifik. Setiap peserta harus mendapatkan ${questionCount} soal yang berbeda dari peserta lainnya.
 Format soal adalah pertanyaan lisan/langsung (bukan pilihan ganda).
 
 Format Output (wajib JSON yang valid):
 {
   "subject": "${subject}",
   "phase": "${phase}",
-  "teams": [
+  "participants": [
     {
-      "team_name": "Regu 1",
+      "participant_name": "Peserta 1",
       "questions": [
         {
           "number": 1,
@@ -29,8 +31,8 @@ Format Output (wajib JSON yang valid):
 }
 
 Pastikan:
-1. Menghasilkan tepat ${participants} regu.
-2. Masing-masing regu memiliki tepat ${questionCount} soal.
+1. Menghasilkan tepat ${participants} peserta.
+2. Masing-masing peserta memiliki tepat ${questionCount} soal.
 3. Kunci jawaban jelas dan singkat.
 4. Output HANYA JSON tanpa teks pengantar atau markdown lainnya.`;
 }

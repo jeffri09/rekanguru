@@ -177,7 +177,7 @@ const initialState = {
     activeTab: 'soal', // 'soal' | 'poster'
     // Soal state
     phase: 'playoff', // 'playoff' | '8besar' | '4besar' | 'final'
-    participants: 10,
+    participants: 21,
     questionCount: 5,
     difficulty: 'sedang',
     subjects: {
@@ -187,6 +187,14 @@ const initialState = {
       pkn: true,
       ipa: true,
       ips: true,
+    },
+    topics: {
+      matematika: '',
+      bahasa_inggris: '',
+      bahasa_indonesia: '',
+      pkn: '',
+      ipa: '',
+      ips: '',
     },
     // Poster state
     poster: {
