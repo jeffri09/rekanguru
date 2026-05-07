@@ -97,7 +97,7 @@ function renderDashboard() {
     <div class="step-container">
       <div class="dashboard-hero">
         <h2 class="dashboard-title">Selamat Datang, Guru! 👋</h2>
-        <p class="dashboard-subtitle">Pilih fitur yang ingin Anda gunakan. Semua dokumen akan di-generate oleh AI sesuai standar Kurikulum Merdeka.</p>
+        <p class="dashboard-subtitle">Aplikasi ini dikembangkan oleh <strong>Jeffri Pamungkas Setiawan, S.Pd.</strong> untuk membantu Bapak/Ibu Guru menyiapkan dokumen administrasi dan media pembelajaran berbasis AI sesuai standar Kurikulum Merdeka.</p>
       </div>
 
       <div class="dashboard-grid">
